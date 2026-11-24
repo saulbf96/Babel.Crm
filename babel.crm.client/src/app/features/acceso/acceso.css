@@ -1,0 +1,26 @@
+.contenedor {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+  background: var(--mat-sys-surface-container);
+}
+
+.tarjeta {
+  width: 100%;
+  max-width: 400px;
+  overflow: hidden;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 16px;
+}
+
+.error {
+  color: var(--mat-sys-error);
+  margin: 0 0 12px;
+}

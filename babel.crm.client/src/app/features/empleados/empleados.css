@@ -1,0 +1,46 @@
+.encabezado {
+  margin-bottom: 1rem;
+}
+
+.subtitulo {
+  margin: 0.25rem 0 0;
+  color: var(--mat-sys-on-surface-variant, #5f6368);
+  font-size: 0.9rem;
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.filtros mat-form-field {
+  min-width: 18rem;
+}
+
+.acciones {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.conteo {
+  margin: 0.5rem 0;
+  color: var(--mat-sys-on-surface-variant, #5f6368);
+  font-size: 0.9rem;
+}
+
+.tabla-contenedor {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+}
+
+.vacio {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant, #5f6368);
+}

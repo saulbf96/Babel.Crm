@@ -1,0 +1,11 @@
+<Project>
+  <!-- Configuración común para todos los proyectos .NET de la solución -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <Company>Babel</Company>
+    <Product>Babel CRM</Product>
+  </PropertyGroup>
+</Project>

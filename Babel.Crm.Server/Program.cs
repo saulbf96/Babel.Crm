@@ -1,28 +1,112 @@
+using System.Threading.RateLimiting;
+using Babel.Crm.Application;
+using Babel.Crm.Domain.Seguridad;
+using Babel.Crm.Infrastructure;
+using Babel.Crm.Server.Controllers;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Serilog;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Bitácora (sección "Serilog" de appsettings).
+builder.Host.UseSerilog((contexto, configuracion) => configuracion.ReadFrom.Configuration(contexto.Configuration));
 
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
+
+// Sesión con cookie segura después de validar usuario y contraseña de BABEL.
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(opciones =>
+    {
+        opciones.Cookie.Name = "__Host-BabelCrm";
+        opciones.Cookie.HttpOnly = true;
+        opciones.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        opciones.Cookie.SameSite = SameSiteMode.Strict;
+        opciones.ExpireTimeSpan = TimeSpan.FromMinutes(30); // cierre por inactividad
+        opciones.SlidingExpiration = true;
+        // Es una API: responde 401/403 en lugar de redirigir a una página de login.
+        opciones.Events.OnRedirectToLogin = c => { c.Response.StatusCode = StatusCodes.Status401Unauthorized; return Task.CompletedTask; };
+        opciones.Events.OnRedirectToAccessDenied = c => { c.Response.StatusCode = StatusCodes.Status403Forbidden; return Task.CompletedTask; };
+    });
+
+// Por defecto todo exige sesión; además hay una política por perfil: [Authorize(Policy = "Administrador")].
+builder.Services.AddAuthorization(opciones =>
+{
+    opciones.FallbackPolicy = opciones.DefaultPolicy;
+    foreach (var perfil in Enum.GetValues<Perfil>())
+    {
+        opciones.AddPolicy(perfil.ToString(), p => p.RequireRole(perfil.ToString()));
+    }
+});
+
+// Máximo 10 intentos de inicio de sesión por minuto por IP.
+builder.Services.AddRateLimiter(opciones =>
+{
+    opciones.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    opciones.AddPolicy(AccesoController.PoliticaLimiteAcceso, contexto =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            contexto.Connection.RemoteIpAddress?.ToString() ?? "sin-ip",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
+});
+
+builder.Services.AddProblemDetails();
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
-app.UseDefaultFiles();
-app.MapStaticAssets();
+app.UseExceptionHandler();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
 
-// Configure the HTTP request pipeline.
+// Encabezados de seguridad (OWASP / ASVS).
+app.Use(async (contexto, siguiente) =>
+{
+    var h = contexto.Response.Headers;
+    h.XContentTypeOptions = "nosniff";
+    h.XFrameOptions = "DENY";
+    h["Referrer-Policy"] = "no-referrer";
+    h["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+    await siguiente();
+});
+
+// Protección CSRF: toda petición que modifica datos en /api debe traer el encabezado que agrega Angular.
+// Junto con la cookie SameSite=Strict impide que otro sitio dispare acciones con la sesión del usuario.
+app.Use(async (contexto, siguiente) =>
+{
+    var metodo = contexto.Request.Method;
+    var modifica = !(HttpMethods.IsGet(metodo) || HttpMethods.IsHead(metodo) || HttpMethods.IsOptions(metodo));
+    if (modifica && contexto.Request.Path.StartsWithSegments("/api")
+        && !contexto.Request.Headers.ContainsKey("X-Babel-Crm"))
+    {
+        contexto.Response.StatusCode = StatusCodes.Status400BadRequest;
+        return;
+    }
+
+    await siguiente();
+});
+
+app.UseSerilogRequestLogging();
+app.UseDefaultFiles();
+app.MapStaticAssets().AllowAnonymous();
+
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
 }
 
 app.UseHttpsRedirection();
-
+app.UseRateLimiter();
+app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHealthChecks("/api/salud").AllowAnonymous();
 app.MapControllers();
-
-app.MapFallbackToFile("/index.html");
+app.MapFallbackToFile("/index.html").AllowAnonymous();
 
 app.Run();
+
+public partial class Program;
