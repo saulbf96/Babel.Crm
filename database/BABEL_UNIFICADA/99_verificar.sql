@@ -1,5 +1,5 @@
 /*
-  BABEL_UNIFICADA - 99. Verificacion rapida despues de ejecutar 01..06.
+  BABEL_UNIFICADA - 99. Verificacion rapida despues de ejecutar 01..09.
   No modifica datos: solo cuenta y muestra catalogos/SPs.
 */
 USE BABEL_UNIFICADA;
@@ -18,7 +18,14 @@ UNION ALL SELECT 'Asignaciones',  COUNT(*) FROM rh.EmpleadoCartera
 UNION ALL SELECT 'Operativo',     COUNT(*) FROM ope.AgenteOperativo
 UNION ALL SELECT 'Procesos',      COUNT(*) FROM adm.ProcesoAsignacion
 UNION ALL SELECT 'Usuarios',      COUNT(*) FROM seg.Usuario
-UNION ALL SELECT 'Cargas',        COUNT(*) FROM adm.CargaAsignacion;
+UNION ALL SELECT 'Cargas',        COUNT(*) FROM adm.CargaAsignacion
+UNION ALL SELECT 'TiposGestion',  COUNT(*) FROM cat.TipoGestion
+UNION ALL SELECT 'CuentasOpe',    COUNT(*) FROM ope.Cuenta
+UNION ALL SELECT 'TelefonosOpe',  COUNT(*) FROM ope.Telefono
+UNION ALL SELECT 'GestionesOpe',  COUNT(*) FROM ope.Gestion
+UNION ALL SELECT 'PromesasOpe',   COUNT(*) FROM ope.Promesa
+UNION ALL SELECT 'Demograficos',  COUNT(*) FROM ope.Demografico
+UNION ALL SELECT 'ControlCarga',  COUNT(*) FROM mig.ControlCarga;
 GO
 
 PRINT '--- Carteras (IdCartera / IdBaseLegacy / Nombre / Departamento) ---';

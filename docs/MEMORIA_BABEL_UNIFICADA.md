@@ -10,10 +10,12 @@
 > El agente **no** debe iniciar ni dejar corriendo servidores propios; solo indica
 > usuario y contraseña de prueba.
 >
-> **Paso actual (2026-11-25):** **Administración terminada, compilada y probada por el
-> usuario** (`ADMIN` / `Babel2026!`). El Alta se ajustó a paridad con el `.exe`: usa la
-> cartera activa de la sesión y exige apellido materno. Sigue la **migración de datos
-> legacy** (solo lo que confirme el personal) y luego **Gestión**.
+> **Paso actual (2026-11-25):** los 11 submenús del `MenuStrip` de `FRM_GESTION_CARTERA`
+> ya son pantallas **funcionales** con datos reales (antes eran informativas). La migración
+> operativa completa de las 13 carteras está **corriendo** (relanzada tras corregir el layout
+> variable de `BAZ_MOVILIDAD` y un deadlock del smoke). Administración sigue terminada y
+> aprobada. **Sin commit**; el usuario prueba con `GESTOR` / `Babel2026!` (Gestión) y
+> `ADMIN` / `Babel2026!` (Administración). Tras la migración: F5 + Ctrl+F5 + relogin.
 
 Este documento existe para poder retomar el proyecto si la conversación se cierra.
 Léelo completo antes de tocar la base o el código.
@@ -63,7 +65,7 @@ con los datos que el personal confirme que se necesitan; no se migra todo.
 - Se restauraron localmente con datos: `CONFIGURACION_APP`, `ADMINISTRA_APP`,
   `REPORTERIA_APP`, `RHBABEL`, `NETMSYST_DEMO`, `HISTORICO_APP`.
 - Se extrajeron firmas, parámetros y columnas de salida de los SPs legacy relevantes.
-- Se creó y ejecutó `BABEL_UNIFICADA` con sus 7 scripts (ver sección 3).
+- Se creó y ejecutó `BABEL_UNIFICADA` con sus 9 scripts (ver sección 3).
 - Se verificó el login local: `ADMIN` / `Babel2026!`, cartera inicial 1 (`BANCO_AZTECA`).
 - Se conectó el backend a `BABEL_UNIFICADA` y se renombró el concepto
   `Cliente/Base` → `Cartera` en los DTOs y repositorios.
@@ -106,17 +108,57 @@ con los datos que el personal confirme que se necesitan; no se migra todo.
 - **Alta igual a Babel (pendiente 3 cerrado):** se quitó el selector de cartera; el alta
   usa `IUsuarioActual.IdCartera` (la cartera activa de la sesión) y el apellido materno
   pasó a ser obligatorio. `POST /api/empleados` ya no recibe `idCartera`.
-- Compilación y pruebas: `dotnet build` OK, 8 unitarias + 6 integración en verde,
+- Compilación y pruebas: `dotnet build` OK, 10 unitarias + 6 integración en verde,
   `npm run build` OK. La prueba de integración nueva valida que el alta sin materno da 400.
+- Se agregó `ServicioEmpleadosTests`: comprueba que el alta usa `IUsuarioActual.IdCartera`
+  (ignora cualquier `idCartera` del cuerpo), normaliza nombres y rechaza el materno vacío
+  sin llamar al repositorio.
+- Se ejecutó la limpieza de datos de prueba: base en 0 empleados, 0 asignaciones,
+  0 operativo, 0 cargas y 0 auditorías.
+- **Migración iniciada:** nuevo script `database/BABEL_UNIFICADA/07_mig_control.sql`
+  ejecutado con éxito; `mig.ControlCarga` y sus SPs de inicio/fin están creados.
+  `99_verificar.sql` sigue en verde.
+- **Migración de personal ejecutada (2026-11-25):** `08_mig_personal.sql` corrió con
+  `XACT_ABORT` y transacción. Lee **solo** bases locales (`RHBABEL` y
+  `CONFIGURACION_APP`); **no se conectó ni escribió en 10.80.5.189**. Resultado:
+  586 empleados, 586 carteras activas, 43 accesos multicartera, **0 omitidos** y
+  3 filas en `mig.ControlCarga` en estatus `TERMINADA`. `IdEmpleadoLegacy` e
+  `IdRegistroLegacy` conservados. Las contraseñas no se migraron.
+  Se agregó `cat.Turno` 7 = `NO ESPECIFICADO` para los 2 empleados con turno legacy 0.
+  Tras la migración: 10 unitarias + 6 integración en verde y `npm run build` sin errores.
+  Estado final verificado: 586 empleados, 586 carteras activas, 43 accesos,
+  7 turnos y 3 cargas de control. Sin commits; rama `feat/unificador_babel`.
+- **Paridad del Alta verificada con SQL real** (dentro de transacción con `ROLLBACK`):
+  `rh.USP_ALTA_EMPLEADO @IdCartera=2` creó el empleado en `BAZ_FRANQUICIA`,
+  departamento derivado 15 y materno `TEST`; mensaje “Empleado dado de alta
+  correctamente.” Después del rollback la base quedó en 0 empleados.
+- **Gestión implementada y verificada (2026-11-25):** backend (`api/gestion`),
+  frontend (`/asesor`) y 4 pruebas unitarias nuevas; 14 unitarias + 6 de integración
+  en verde, `npm run build` OK y smoke real de los 10 SPs dentro de transacción con
+  `ROLLBACK` (0 filas de prueba). `99_verificar.sql` agregó los conteos de `ope.*`.
+- **Usuario de prueba para Gestión creado (2026-11-25):** `GESTOR` / `Babel2026!`,
+  `IdUsuario=2`, `IdEmpleado=6`, `IdPuesto=17` (perfil `Supervisor`), cartera 1
+  (`BANCO_AZTECA`). Se reutilizó el hash PBKDF2 de ADMIN (verificado contra la
+  contraseña con PBKDF2-SHA256, 100000 iteraciones). No se migró contraseña legacy.
+  ADMIN no sirve para probar Gestión porque tiene `IdEmpleado=NULL` y el alta de
+  gestión exige empleado de la sesión.
 
 ### En curso / pendiente inmediato
 
-- **Limpieza:** borrar los datos de prueba que dejó el usuario (1 empleado, 2 asignaciones,
-  1 carga) antes de migrar; ver SQL de limpieza en la sección 11.
-- **Migración legacy:** definir con el personal qué datos se migran y ejecutarla.
-- **Gestión:** iniciar el análisis de `decompiled/BABELGESTION/` y sus pantallas.
-- Agregar una tabla de control de migración (`mig.*`) antes de copiar datos legacy,
-  para registrar origen, filas y fecha de cada carga.
+- **Prueba manual pendiente (reanudada 2026-11-25):** el usuario entra con `GESTOR` /
+  `Babel2026!` y prueba los 11 submenús y `/asesor` con los datos migrados. La app puede
+  estar abierta en VS; hay que reiniciar con F5 y hacer Ctrl+F5 para recargar el bundle,
+  además de relogin. El agente no inicia ni detiene servidores.
+- **Migración operativa completa (~25 M filas) EN CURSO:** relanzada el 2026-11-25 con
+  `$lote = 100000` y log en `%TEMP%\opencode\mig_completa_final.log`. El primer intento
+  falló en cartera 3 (`BAZ_MOVILIDAD`) por `NECU_GESTION_DESC`; el script ahora consulta
+  `INFORMATION_SCHEMA.COLUMNS` remoto y usa columnas alternas o `NULL`. Smoke de cartera 3
+  verificado: 54,747 cuentas y 16 cargas `TERMINADA` (13:45:52). Un segundo smoke con
+  `$lote = 1000` murió por deadlock al insertar teléfonos; no quedó proceso corriendo y las
+  2 cargas `INICIADA` huérfanas se marcaron `CANCELADA` antes del relanzamiento. Solo
+  `SELECT` en `10.80.5.189`; nunca `BACKUP`, `INSERT`, `UPDATE` ni `DELETE` en el remoto.
+- `mig.ControlCarga` ya existe y `12_herramientas.sql` quedó aplicado (tablas y SPs de
+  Herramientas). Tras la migración hay que verificar conteos por cartera y `ControlCarga`.
 
 ### Bloqueado
 
@@ -126,6 +168,10 @@ con los datos que el personal confirme que se necesitan; no se migra todo.
   llamaba ese SP; por ahora solo existen tablas y SPs de staging.
 - Faltan por respaldar/restaurar localmente 12 bases de cartera (solo está
   `NETMSYST_DEMO`); se necesitan para la migración completa de datos.
+- Conteos legacy locales al 2026-11-25: `RHBABEL.NEEM_EMPLEADO` 586 (el remoto reportó
+  585, hay que conciliar), `REBA_BASE_AREA_EMPLEADO` 13, `NEPE_PASSWORD` 586 (**no migrar**).
+  `CONFIGURACION_APP.CAPD_PRODUCTO`, `CASE_SEGMENTO` y `CASM_SEGMENTO` tienen 1 fila cada
+  uno con ID 0, así que el operativo usa los defaults actuales del CRM.
 - El T-SQL de los SPs legacy sigue cifrado; solo se conocen firmas/columnas.
 
 ---
@@ -139,11 +185,17 @@ Carpeta: `database/BABEL_UNIFICADA/`
 | Script | Contenido |
 |---|---|
 | `01_crear_base.sql` | Crea la base, esquemas `seg/rh/cart/ope/adm/cat/log` y bitácora. |
-| `02_catalogos.sql` | Puestos (29), departamentos (25), sexos (3), turnos (6), clientes (13), carteras (13). |
+| `02_catalogos.sql` | Puestos (29), departamentos (25), sexos (3), turnos (7, incluye `NO ESPECIFICADO`), clientes (13), carteras (13). |
 | `03_rh_empleados.sql` | `rh.Empleado`, `rh.EmpleadoCartera`, `rh.EmpleadoCarteraAcceso`, consulta/alta y catálogos. |
 | `04_seg_usuarios.sql` | `seg.Usuario`, login, bloqueo, usuario ADMIN. |
 | `05_cart_asignaciones.sql` | Carteras, validación, personal, asignar/restaurar y operativo. |
 | `06_adm_carga_asignaciones.sql` | Staging de carga de asignaciones. |
+| `07_mig_control.sql` | Esquema `mig`, tabla `ControlCarga` y SPs para iniciar/cerrar cargas. |
+| `08_mig_personal.sql` | Migración de empleados, cartera activa y accesos desde bases locales. |
+| `09_gestion.sql` | `cat.TipoGestion`, tablas `ope.*` de Gestión y 10 SPs `ope.USP_*`. |
+| `10_mig_operativo_muestra.ps1` | Muestra de 150 cuentas de `BANCO_AZTECA` (cartera 1). |
+| `11_mig_operativo_completo.ps1` | Migración completa de las 13 carteras activas, por lotes de 100000, con detección de columnas remotas y `mig.ControlCarga`. |
+| `12_herramientas.sql` | Tablas y SPs `ope.*` para Notas, Bloc de Notas, Recesos, Agenda, Negociaciones y actualización de demográficos. |
 | `99_verificar.sql` | Verificación de conteos, carteras, ADMIN, SPs y pruebas. |
 
 ### Cómo ejecutarlos (SQL local, Windows auth)
@@ -157,6 +209,8 @@ $archivos = @(
   "database\BABEL_UNIFICADA\04_seg_usuarios.sql",
   "database\BABEL_UNIFICADA\05_cart_asignaciones.sql",
   "database\BABEL_UNIFICADA\06_adm_carga_asignaciones.sql",
+  "database\BABEL_UNIFICADA\07_mig_control.sql",
+  "database\BABEL_UNIFICADA\08_mig_personal.sql",
   "database\BABEL_UNIFICADA\99_verificar.sql"
 )
 foreach ($a in $archivos) {
@@ -171,12 +225,14 @@ foreach ($a in $archivos) {
 > `UX_AgenteOperativo_Activo`). Si se ejecuta SQL manual sobre esas tablas,
 > hay que activar `QUOTED_IDENTIFIER ON` en la sesión.
 
-### Usuario de prueba
+### Usuarios de prueba
 
-- **Usuario:** `ADMIN`
-- **Contraseña:** `Babel2026!`
-- `IdPuesto = 1` (Administrador), `IdDepartamento = 12`, `DebeCambiarContrasena = 0`.
-- Hash PBKDF2-SHA256 en `seg.Usuario`; nunca se guarda en claro.
+- **Administración:** `ADMIN` / `Babel2026!`
+  - `IdPuesto = 1` (Administrador), `IdDepartamento = 12`, `DebeCambiarContrasena = 0`.
+- **Gestión:** `GESTOR` / `Babel2026!`
+  - `IdUsuario = 2`, `IdEmpleado = 6`, `IdPuesto = 17` (Supervisor), cartera 1 `BANCO_AZTECA`.
+  - ADMIN no sirve para gestionar: tiene `IdEmpleado = NULL`.
+- Hash PBKDF2-SHA256 en `seg.Usuario`; nunca se guarda en claro ni se migró del legacy.
 
 ### Trazabilidad del origen de los datos
 
@@ -203,7 +259,10 @@ del CRM, no para migración. Antes de copiar datos legacy se agregará `mig.Cont
 - `rh.Empleado`, `rh.EmpleadoCartera`, `rh.EmpleadoCarteraAcceso`
 - `seg.Usuario`, `log.AccesoBloqueo`, `log.Auditoria`
 - `cart.Cliente`, `cart.Cartera`
+- `cat.TipoGestion` (7 tipos)
 - `ope.AgenteOperativo`
+- `ope.Cuenta`, `ope.Telefono`, `ope.Gestion`, `ope.Promesa`, `ope.Demografico`,
+  `ope.MoraFuenteIngreso`, `ope.EvolucionCuenta`, `ope.DatoCuenta` (todas con `IdCartera`)
 - `adm.ProcesoAsignacion`, `adm.CargaAsignacion`, `adm.CargaAsignacionDetalle`
 
 ### SPs nuevos (equivalentes legacy)
@@ -233,6 +292,20 @@ del CRM, no para migración. Antes de copiar datos legacy se agregará `mig.Cont
 | `adm.USP_AGREGA_DETALLE` | detalle de fila |
 | `adm.USP_AGREGA_DETALLE_LOTE` | detalle de muchas filas (JSON) |
 | `adm.USP_ACTUALIZA_CARGA` | estatus de la carga |
+| `ope.USP_CONSULTA_TIPOS_GESTION` | catálogo de tipos de gestión |
+| `ope.USP_CONSULTA_CUENTAS` | localizar cuenta de la cartera |
+| `ope.USP_CREA_CUENTA` | capturar cuenta (`ID_CONTROL` legacy) |
+| `ope.USP_CONSULTA_CUENTA` | detalle de cuenta |
+| `ope.USP_CONSULTA_TELEFONOS` / `ope.USP_REGISTRA_TELEFONO` | teléfonos de `NEBT_BASE_TELEFONICA` |
+| `ope.USP_CONSULTA_GESTIONES` / `ope.USP_REGISTRA_GESTION` | gestiones de `NEGE_GESTION` |
+| `ope.USP_CONSULTA_PROMESAS` / `ope.USP_REGISTRA_PROMESA` | promesas de `NEPR_PROMESAS` |
+| `ope.USP_CONSULTA_DEMOGRAFICOS` | demográficos de `NEDE_DEMOGRAFICOS` |
+| `ope.USP_CONSULTA_NOTAS` / `ope.USP_REGISTRA_NOTA` | `NENO_NOTAS` (`FRM_NOTAS`) |
+| `ope.USP_CONSULTA_BLOCNOTA` / `ope.USP_GUARDA_BLOCNOTA` | bloc del ejecutivo (`FRM_BLOCNOTAS`) |
+| `ope.USP_INICIA_RECESO` / `ope.USP_FINALIZA_RECESO` / `ope.USP_CONSULTA_RECESOS` | `HIRE_RECESO` / `NEPG_RECESOS` (`FRM_BLOQUEAR`) |
+| `ope.USP_CONSULTA_AGENDA` / `ope.USP_REGISTRA_AGENDA` / `ope.USP_CAMBIA_ESTATUS_AGENDA` | agenda de llamadas (habilitada en el CRM) |
+| `ope.USP_CONSULTA_NEGOCIACIONES` / `ope.USP_REGISTRA_NEGOCIACION` | `NENE_NEGOCIACIONES` (`Calculadora`) |
+| `ope.USP_ACTUALIZA_DEMOGRAFICO` | `NEDE_DEMOGRAFICOS` (`Actualiza Información`) |
 
 ---
 
@@ -260,8 +333,20 @@ del CRM, no para migración. Antes de copiar datos legacy se agregará `mig.Cont
 
 ### Decisiones de migración
 
-- **Sexo:** el catálogo legacy solo etiqueta 1=Masculino y 2=Femenino; 3/4 salen en
-  blanco. Catálogo nuevo: 1=Masculino, 2=Femenino, 3=Otro. Al migrar: 3→2 y 4→3.
+- **Sexo:** el `FRM_ALTAEMPLEADOS` del `.exe` guarda `Conversion.Val(CMB_SEXO.Text)`,
+  es decir 2=MASCULINO, 3=FEMENINO, 4=OTRO. `CASX_SEXO` etiqueta 1=MASCULINO,
+  2=FEMENINO (código viejo, solo 3 filas de ejemplo). Mapeo aplicado:
+  legacy 1 y 2 → CRM 1 (MASCULINO), legacy 3 → CRM 2 (FEMENINO),
+  legacy 4 y 0 → CRM 3 (OTRO; 0 viene en blanco). Comprobado con los datos:
+  el grupo legacy 3 contiene nombres femeninos de forma consistente. Queda
+  documentada la ambigüedad del código 2 (nombres mezclados en los datos legacy).
+- **Turno:** el mismo formulario guarda 1=Matutino, 2=Vespertino, 3=Completo,
+  idénticos al CRM. Legacy 0 (2 empleados) → CRM 7 `NO ESPECIFICADO` (nuevo).
+- **Cartera del empleado:** `CONFIGURACION_APP.RECE_CLIENTE_EMPLEADO` (586 filas) es
+  la fuente real, no `RHBABEL.REBA_BASE_AREA_EMPLEADO` (solo 13 filas del empleado 1).
+  Si `RECE_ID_CARTERA` no está entre 1 y 13 se deriva de `RECE_ID_BASE` vía
+  `cart.Cartera.IdBaseLegacy`; los accesos múltiples salen de
+  `REUM_USUARIO_MULTI_CARTERA` (43 filas).
 - **Contraseñas:** `CONSULTA_NEEU_EMPLEADOS_MODULO` devuelve la contraseña en claro.
   **No se migran**. El CRM usa PBKDF2.
 - **Cambia Cartera:** en el `.exe` solo cambiaba `MDL_INICIO.ID_BBDD` en la sesión.
@@ -387,6 +472,14 @@ Resultado esperado del login: `{"debeCambiarContrasena":false}`.
 - `GET /api/cargas/procesos` — procesos 1–4.
 - `GET /api/cargas?idCartera=` — historial de cargas.
 - `POST /api/cargas` — registra una carga en staging.
+- `GET /api/gestion/cuentas`, `GET/POST /api/gestion/cuenta`, teléfonos, gestiones,
+  promesas, demográficos y catálogo de tipos — política `Gestion`; cartera y empleado
+  siempre vienen de la sesión.
+- `GET/POST /api/herramientas/notas/{idCuenta}`, `GET/PUT /api/herramientas/bloc-nota`,
+  `GET/POST /api/herramientas/recesos`, `POST /api/herramientas/recesos/{id}/fin`,
+  `GET/POST /api/herramientas/agenda`, `POST /api/herramientas/agenda/{id}/estatus`,
+  `GET/POST /api/herramientas/negociaciones/{idCuenta}`,
+  `PUT /api/herramientas/demograficos/{idCuenta}` — política `Gestion`.
 - `GET /api/salud` — health check anónimo.
 
 ---
@@ -490,26 +583,44 @@ esa base y la app levantada por el usuario. Login: `ADMIN` / `Babel2026!`.
    - Login `ADMIN` / `Babel2026!`; las cinco pantallas funcionan y F5 abre Chrome.
 
 2. **Retestar el Alta (paridad aplicada)**
-   - Reiniciar la app para cargar el cambio.
-   - Confirmar que no hay selector de cartera, se muestra la cartera activa y el
-     materno es obligatorio.
+   - **Verificación automática lista:** `ServicioEmpleadosTests` confirma que se usa la
+     cartera de la sesión y que el materno vacío se rechaza antes de tocar la base.
+   - **Verificación SQL real lista:** alta con cartera 2 → `BAZ_FRANQUICIA`, depto 15,
+     materno guardado; `ROLLBACK` dejó la base limpia.
+   - **Confirmación visual del usuario recibida (2026-11-25):** Alto cerrada; no hay
+     selector de cartera, se muestra la cartera activa y el materno es obligatorio.
 
-3. **Limpieza de datos de prueba**
-   - Borrar 1 empleado, 2 asignaciones y 1 carga (SQL en la sección 11).
+3. ~~**Limpieza de datos de prueba**~~ — **hecha**.
+   - Se borraron empleado 2 (`karla perez perez`), 2 asignaciones, 1 acceso,
+     1 carga y 3 auditorías. Conteos finales: todo en 0 (SQL en la sección 11).
 
-4. **Migración legacy (solo lo que confirme el personal)**
-   - Definir con el personal qué empleados/asignaciones se migran.
-   - Agregar `mig.ControlCarga` con origen, fecha, filas y usuario.
-   - Respaldar/restaurar las 12 bases de cartera que faltan (hoy solo `NETMSYST_DEMO`).
-   - Migrar empleados y su cartera activa usando `IdEmpleadoLegacy`/`IdRegistroLegacy`.
-   - Migrar también segmento/producto/campaña del empleado para el operativo
-     (pendiente 4: Babel los hereda del registro, no los captura en pantalla).
-   - **No migrar contraseñas**; el CRM usa PBKDF2.
-   - Validar conteos contra `CONSULTA_NEEU_EMPLEADOS_MODULO` (585 empleados remotos).
+4. **Migración legacy — personal local migrado**
+   - **Hecho:** `07_mig_control.sql` creó `mig.ControlCarga` y sus SPs de inicio/fin.
+   - **Hecho:** `08_mig_personal.sql` ejecutado: 586 empleados, 586 carteras activas,
+     43 accesos multicartera, 0 omitidos, 3 cargas `TERMINADA` en `mig.ControlCarga`.
+     Lee solo tablas locales; **sin conexión ni escritura en 10.80.5.189**.
+   - **Hecho:** segmento/producto/campaña se copiaron de `RECE_CLIENTE_EMPLEADO`
+     (los 586 registros traen 0, igual que los defaults del CRM).
+   - **Hecho:** contraseñas excluidas; el CRM usa PBKDF2.
+   - **Inventario remoto de solo lectura (2026-11-25):** se conectó a `10.80.5.189`
+     únicamente con `SELECT` a `sys.databases`, `sys.tables` y `sys.partitions`;
+     **sin BACKUP, INSERT, UPDATE ni DELETE**. Las 13 bases de cartera están online
+     y comparten ~98 tablas idénticas. Contienen datos operativos de Gestión
+     (aprox. 25 millones de filas en total): `NEBT_BASE_TELEFONICA`, `NEGE_GESTION`,
+     `NEDE_DEMOGRAFICOS`, `HIEC_EVOLUCION_CUENTA`, `NECU_DATOSCUENTA`,
+     `NEPR_PROMESAS`, etc. `BAZ_MOVILIDAD` sola supera los 12 M de filas en
+     `NEBT_BASE_TELEFONICA`. **No hay tablas destino en `BABEL_UNIFICADA` para esos
+     datos** (solo `ope.AgenteOperativo`): copiarlos requiere primero diseñar el
+     esquema de Gestión, que es la fase siguiente.
+   - **Conciliación cerrada (2026-11-25, solo lectura):** el remoto `RHBABEL.dbo.NEEM_EMPLEADO`
+     tiene 586 registros y 586 activos (el 585 previo era un dato stale), y la lista de
+     `NEEM_ID_EMPLEADO` activos coincide exactamente con los 586 `IdEmpleadoLegacy`
+     migrados: 0 IDs solo en remoto y 0 solo en local. No hubo escrituras en el 189.
 
-5. **Gestión**
-   - Revisar `decompiled/BABELGESTION/` y `analysis/BABELGESTION.xml`.
-   - Mapear pantallas a `ope.*` y `cart.*`; empezar por la gestión de cartera del asesor.
+5. **Gestión — lista para prueba manual**
+   - Usuario: `GESTOR` / `Babel2026!` (perfil `Supervisor`, cartera `BANCO_AZTECA`).
+   - Ruta: `/asesor` (menú “Gestión de cartera”). Ver flujo completo en la sección 8.
+   - Después del visto bueno: migrar los ~25 M de filas operativas.
 
 6. **Carga real de asignaciones** (bloqueada)
    - Confirmar el layout del Excel y el SP `PROCESO_ASIGNACION_<base>` con sistemas.
@@ -526,8 +637,179 @@ esa base y la app levantada por el usuario. Login: `ADMIN` / `Babel2026!`.
 - Revisar `decompiled/BABELGESTION/` y el XML `analysis/BABELGESTION.xml`.
 - Mapear pantallas de Gestión a `ope.*` y `cart.*`.
 - La migración de datos legacy se hace al final, solo con lo que el personal confirme.
-- Antes de migrar: respaldar/restaurar las 12 bases de cartera que faltan
-  (hoy solo está `NETMSYST_DEMO`).
+- Ya no hace falta restaurar las 12 bases: se puede inventariar y leer `10.80.5.189`
+  con `SELECT` directo, sin modificar el servidor (ver sección 7).
+- **Inventario agregado de tablas con datos (solo lectura, 2026-11-25):**
+  las 31 tablas con filas suman ~25 M. Las mayores son `NEBT_BASE_TELEFONICA`
+  (14,744,596 en 11 bases), `NEGE_GESTION` (3,432,964 en 8), `NEDE_DEMOGRAFICOS`
+  (3,098,378 en 11), `HIEC_EVOLUCION_CUENTA` (2,335,008 en 9),
+  `NEIG_ID_GES_ID_GPO_STA` (1,607,964 en 1), `NEMF_MORA_FUENTE_INGRESO`
+  (1,115,108 en 7) y `NEPR_PROMESAS` (1,105,100 en 7).
+- **Tablas pequeñas/control:** `CARM_RAZON_MORA` (216), `CAFI_FUENTE_INGRESO`
+  (81), `CADP_DONDE_PAGO` (26), `CARN_RAZON_NO_DEL_PAGO` (26),
+  `NENE_NEGOCIACIONES` (26), `REES_STA_SIT_FILA_TRABAJO` (3),
+  `NEFT_FILAS_TRABAJO` (3) y `NEEA_EMPLEADO_ASIGNADO` (2). Ninguna tiene tabla
+  destino equivalente en `BABEL_UNIFICADA`. En particular, las 2 filas de
+  `NEEA_EMPLEADO_ASIGNADO` (KUBO/base 20 y NETMSYST_DEMO/base 18) asignan
+  `NEEA_ID_EMPLEADO=1` a `NEEA_ID_FILA_TRABAJO=1`; son asignaciones operativas
+  de fila de trabajo, **no** accesos de empleado a cartera, así que no se copian
+  a `rh.EmpleadoCarteraAcceso`.
+- **Conclusión:** el alcance migrable con el esquema actual quedó cerrado
+  (empleados, carteras activas, accesos y control de cargas). La copia de los
+  ~25 M de filas operativas requiere primero diseñar el esquema de Gestión en
+  `ope.*`/`cart.*`; no se hace en esta fase ni se inventan tablas destino.
+
+- **Verificación final (2026-11-25):** `99_verificar.sql` terminó correctamente;
+  `dotnet build` 0 errores, 10 pruebas unitarias y 6 de integración en verde;
+  `npm run build` en verde. Sin servidores levantados por el agente y sin commit.
+- **Inicio de Gestión aprobado por el usuario (2026-11-25):** se implementará
+  primero el módulo/esquema de Gestión; se avisará al usuario para pruebas
+  manuales y solo después se ejecutará la migración de los ~25 M de filas.
+- **Paso 1 de Gestión hecho:** nuevo script `09_gestion.sql` creado y ejecutado
+  en `BABEL_UNIFICADA`: `cat.TipoGestion` (7 tipos), `ope.Cuenta`, `ope.Telefono`,
+  `ope.Gestion`, `ope.Promesa`, `ope.Demografico`, `ope.MoraFuenteIngreso`,
+  `ope.EvolucionCuenta` y `ope.DatoCuenta`, todas con `IdCartera` e `IdRegistroLegacy`
+  cuando aplica, más 10 SPs `ope.USP_*`. No se tocó el 189 ni se borraron objetos.
+- **Paso 2 de Gestión hecho (backend):** DTOs/contratos en
+  `UnoContact.Crm.Application/Gestion/`, `ServicioGestion` (toma cartera y empleado de
+  `IUsuarioActual`, nunca del cliente), `RepositorioGestion` (SPs parametrizados),
+  `GestionController` (`api/gestion`), DI en Application/Infrastructure y política
+  `Gestion` para `Asesor`, `Supervisor` y `Administrador`. El alta usa `ID_CONTROL`
+  legacy como control operativo; `CUENTA` es solo el número visible.
+- **Paso 3 de Gestión hecho (frontend):** `core/gestion/` (models + service) y
+  `features/gestion/` (pantalla). La ruta `/asesor` reemplaza a `EnConstruccion` y carga
+  el componente de forma diferida; el menú incluye a los tres perfiles y
+  `perfilGuard` acepta varios perfiles. `npm run build` en verde (chunk `gestion`).
+- **Paso 4 de Gestión hecho (verificación):** 14 pruebas unitarias + 6 de integración
+  en verde; `dotnet build` 0 errores; smoke SQL real de `USP_CREA_CUENTA`,
+  `USP_REGISTRA_TELEFONO`, `USP_REGISTRA_GESTION`, `USP_REGISTRA_PROMESA` y las 6
+  consultas, dentro de `BEGIN TRAN`/`ROLLBACK` (5 conteos en 0 al final);
+  `99_verificar.sql` muestra 586 empleados, 7 tipos de gestión y 0 datos operativos.
+- **Paso 5: inventario real del `.exe` y menús 4+7 (2026-11-25).** El usuario corrigió
+  que el `.exe` de Gestión tiene mucho más que `/asesor`: el `MenuStrip` de
+  `FRM_GESTION_CARTERA.cs` define **Gestión (4 submenús)** y **Herramientas (7 submenús)**.
+  Inventario entregado:
+  - **Gestión (4):** `Nueva Gestion.` → `/asesor` (pantalla completa ya migrada);
+    `Bloquear` → `/gestion/bloquear`; `Cancelar` → `/gestion/cancelar`;
+    `Agendar Llamada.` → `/gestion/agendar-llamada`.
+  - **Herramientas (7):** `Buscar.` → `/herramientas/buscar`; `Notas` →
+    `/herramientas/notas`; `Bloc de Notas` → `/herramientas/bloc-notas`;
+    `Calculadora` → `/herramientas/calculadora`; `Actualiza Información` →
+    `/herramientas/actualiza-informacion`; `Expedientes` → `/herramientas/expedientes`;
+    `Softphone` → `/herramientas/softphone`.
+  - Implementación inicial: `CatalogoMenu` con campo `Grupo`; `OpcionMenu.grupo` en el
+    front; encabezados de grupo en `shell.html`/`shell.css`. **Corrección 2026-11-25:**
+    `OpcionMenuDto` no incluía `Grupo`, así que el frontend nunca recibía los encabezados;
+    se agregó el campo y se mapeó `o.Grupo` en `ServicioSesion.ObtenerSesion`.
+  - Además hay 12 pestañas dentro de `FRM_GESTION_CARTERA` (Cartera personalizada,
+    Archivo Muerto, Demográficos/Email, Datos adicionales, Negociaciones, Promesas,
+    Visitas, Gestiones, Subir Gestión, Adicionales cartera, Saldos, Cuestionario).
+    Siguen siendo el siguiente inventario a migrar.
+- **Paso 6: migración de muestra ejecutada (2026-11-25).** El linked server `BABEL189`
+  quedó creado con `@provstr='Encrypt=no;TrustServerCertificate=true;'`, pero sus
+  consultas devolvían 0 filas sin error; se descartó y se migró con conexión directa
+  `SELECT` desde PowerShell, sin escribir jamás en `10.80.5.189`.
+  Script: `database/BABEL_UNIFICADA/10_mig_operativo_muestra.ps1` (150 cuentas de
+  `BANCO_AZTECA`, cartera 1, con sus entidades relacionadas). Resultado verificado:
+  `ope.Cuenta` 150, `ope.Telefono` 383, `ope.Gestion` 278, `ope.Promesa` 39,
+  `ope.Demografico` 8; 5 cargas `TERMINADA` en `mig.ControlCarga` (Ids 4-8);
+  `ope.USP_CONSULTA_CUENTAS @IdCartera=1` devuelve las cuentas reales con cliente,
+  saldo y empleado. El estado legacy `NEGE_ID_STATUS` se preserva dentro de
+  `Comentario`; el tipo de gestión se fija en 1 hasta confirmar el catálogo con el área.
+- **Paso 7: prueba manual pendiente del usuario.** Usuario `GESTOR` / `Babel2026!`,
+  ruta `/asesor` y los 10 submenús. Tras la migración completa: F5, Ctrl+F5 y relogin.
+  1. Entrar y confirmar “Cartera activa: BANCO_AZTECA”.
+  2. Buscar una cuenta migrada por número, cliente o ID de control y abrirla.
+  3. Agregar teléfono, guardar gestión y promesa reales.
+  4. Probar Notas, Bloc de Notas, Calculadora, Actualiza Información, Expedientes,
+     Softphone, Bloquear (receso), Agendar Llamada y Cancelar.
+  5. Repetir con otra cuenta y, si quiere, usar “Cambia Cartera” (solo cambia la
+     sesión; no escribe en BD).
+- **Paso 8: 11 submenús funcionales (2026-11-25).** Se eliminó el componente informativo
+  `LegacyModulo`: las 10 rutas `/gestion/*` y `/herramientas/*` usan ahora
+  `features/herramienta/` con `data.modo`. Backend nuevo: `Herramientas.cs` (DTOs/contratos),
+  `ServicioHerramientas` (cartera y empleado desde `IUsuarioActual`, nunca del cliente),
+  `RepositorioHerramientas` (SPs `ope.USP_*`), `HerramientasController` (`api/herramientas`)
+  y registros DI; `12_herramientas.sql` creó las tablas/SPs y ya está aplicado.
+  `/asesor` lee `?id=` para abrir la cuenta seleccionada desde otras herramientas.
+  Mapeo real verificado en los handlers de `FRM_GESTION_CARTERA.cs` y `MDL_CONSULTAS.cs`:
+  - `Bloquear` controla recesos/break (`HIRE_RECESO`, `NEPG_RECESOS`), **no** bloqueo de cuenta.
+  - `Calculadora` abre `FRM_NEGOCIACIONES`, no la calculadora de Windows.
+  - `Agendar Llamada.` estaba inactivo en el legacy (sin handler, `Enabled=false`),
+    pero se habilitó en el CRM porque el usuario pidió que todo funcione.
+  - `Expedientes` muestra el consolidado migrado; no replica el acceso a PDFs por unidad
+    de red legacy. `Softphone` registra la marcación en CRM; no implementa SIP real.
+  - Se corrigió `CS1503` en `FinalizarRecesoAsync`: `byte` → `long` en interfaz y
+    repositorio. `dotnet build` del Server: **0 errores**; `npm run build`: **0 errores**
+    (`main-RPQY4SIC.js`).
+- **Paso 9: migración operativa completa (2026-11-25, TERMINADA).** Script
+  `11_mig_operativo_completo.ps1`, 13 carteras activas, lotes de 100000, staging en
+  `mig.*`, control en `mig.ControlCarga`. El primer intento falló en cartera 3
+  (`BAZ_MOVILIDAD`) por `Invalid column name 'NECU_GESTION_DESC'`: ese base tiene otro
+  layout. El script ahora consulta `INFORMATION_SCHEMA.COLUMNS` en el remoto (solo
+  `SELECT`) y usa `TRY_CONVERT` sobre columnas alternas para `Saldo`/`GestionDesc`, o
+  `NULL` si no existen. Smoke de cartera 3 verificado: 54,747 cuentas y 16 cargas
+  `TERMINADA` (13:45:52). Un segundo smoke con `$lote = 1000` murió por deadlock al
+  insertar 4,906,000 teléfonos; se confirmó que no quedó proceso powershell activo y
+  las cargas `INICIADA` se marcaron `CANCELADA`. Relanzamiento en background con log
+  `%TEMP%\opencode\mig_completa_final.log`. **Segundo fallo (cartera 5 `MBA`):**
+  `invalid column length from the bcp client for colid 3` porque
+  `NECU_NOMBRE_CLIENTE` es `varchar(200)` en esa base y el staging tenía `varchar(60)`
+  (`NECU_CUENTA` llega a `varchar(50)`). Inventario de longitudes máximas en las 13 bases
+  (solo `SELECT`): se amplió `mig.StgCuenta.Numero` a 50 y `Cliente` a 200, y
+  `ope.Demografico.Colonia`/`Delegacion`/`Estado` a 200. Carga huérfana marcada
+  `CANCELADA` y relanzamiento con log `%TEMP%\opencode\mig_completa_final2.log`.
+  **Resultado final (14:40:15, exit code 0, "Migración completa terminada"):**
+  `ope.Cuenta` 435,760; `ope.Telefono` 904,915; `ope.Gestion` 237,605;
+  `ope.Promesa` 20,881; `ope.Demografico` 318,365. Por cartera (cuentas): 1 `BANCO_AZTECA`
+  67,802; 2 `BAZ_FRANQUICIA` 67,669; 3 `BAZ_MOVILIDAD` 54,747; 4 `NETMSYST_DEMO`
+  6,808; 5 `MBA` 91,458; 6 `KUBO` 1,701; 7 `BAZ_EXEMPLEADOS` 2,669; 8 `TOTAL_PLAY`
+  8,657; 9 `CONCREDITO` 6,808; 10 `SEARS` 66,933; 11 `SANBORNS` 0; 12
+  `INBURSA_FIANZAS_TELCEL` 60,508; 13 `LSF_PRESTAMOS_PERSONALES` 0. Las carteras 11 y
+  13 están vacías también en el legacy (`SELECT COUNT(*) FROM NECU_DATOSCUENTA` = 0 en
+  ambas bases), no es pérdida ni dato inventado. `mig.ControlCarga`: **101 `TERMINADA`,
+  0 `INICIADA`, 3 `CANCELADA`** de intentos anteriores. Siguiente paso: usuario hace
+  F5 → Ctrl+F5 → relogin con `GESTOR` / `Babel2026!` y prueba `/asesor` + los 10
+  submenús con datos migrados. Carga complementaria (`ope.MoraFuenteIngreso`,
+  `ope.EvolucionCuenta`, notas/negociaciones) queda pendiente de aprobación visual.
+  Se creó `database/BABEL_UNIFICADA/RECARGA/` con `README.md`, `00_BACKUP_LOCAL.sql`
+  (backup local opcional), `01_TRUNCATE_OPERATIVO.sql` (TRUNCATE de `ope.*`, `mig.Stg*`
+  y `mig.ControlCarga` deshabilitando/revalidando las 13 FKs con padre en `ope`),
+  `02_RECARGA_COMPLETA.ps1` (todo en uno con log en `%TEMP%\opencode`) y
+  `03_VERIFICAR_RECARGA.sql`. No se ejecutó: solo se validó sintaxis (`PARSEONLY` y
+  parser de PowerShell). Advertencia documentada: no truncar `seg`, `rh`, `cart`,
+  `cat`, `adm` ni `log` porque se perderían usuarios (incluido `GESTOR`, sin script
+  automático de creación), empleados y carteras.
+- **Verificación backend de Gestión (2026-11-25, sin escribir en BD):** la app ya
+  estaba levantada (`localhost:5018` API, `localhost:51276` Angular). Login con
+  `GESTOR` OK, menú 13 entradas (Inicio + Supervisión + 4 de Gestión + 7 de
+  Herramientas). Cuenta de prueba real `IdCuenta=455198`
+  (`1-1-7168-73347`, FRANCISCO JAVIER MENDEZ RUIZ): 4 teléfonos, 29 gestiones,
+  7 promesas y 2 demográficos, todos leídos por la API. Agendas, notas y
+  negociaciones devuelven 0 filas porque aún no se capturó nada en el CRM (no es
+  error). Hay un receso `IdReceso=1` activo iniciado a las 15:38 por prueba del
+  usuario. `/api/catalogos` devuelve 403 para `GESTOR` porque es política
+  `Administrador`; no lo usan las pantallas de Gestión. **Pendiente:** que el
+  usuario confirme visualmente pantalla por pantalla (F5 → Ctrl+F5 → relogin).
+- **Verificación backend de Administración (2026-11-25, sin escribir en BD):**
+  login `ADMIN` OK (`IdEmpleado=0`, perfil `Administrador`, cartera 1). Menú 17
+  entradas: 4 de Gestión + 7 de Herramientas + 5 de Administración (Consulta de
+  empleados, Alta de empleados, Asignar personal, Cambia cartera, Carga de
+  asignaciones). GETs: `/api/catalogos` 200 (13 carteras), `/api/empleados` 200
+  (586 activos; 232 en cartera 1), `/api/carteras` 200 (13),
+  `/api/carteras/1/personal` 200 (586), `/api/carteras/operativo?idCartera=1` 200
+  (0 filas), `/api/cargas/procesos` 200 (4 procesos), `/api/cargas?idCartera=1`
+  200 (0 cargas). Las 5 rutas POST se probaron con JSON inválido: las 5 dieron
+  400 de validación antes de ejecutar el servicio, así que están autorizadas y
+  no se grabó nada (conteos intactos: 586 empleados, 586 asignaciones, 13
+  carteras, 0 cargas, 2 usuarios). `GET /api/gestion/cuentas` con ADMIN también
+  responde 200 porque la política `Gestion` incluye a `Administrador` (no es
+  un error). **Limitación real pendiente:** `Carga de asignaciones` solo registra
+  staging y responde "Carga recibida. Pendiente de validacion."; el procesamiento
+  real sigue bloqueado por el SP cifrado `PROCESO_ASIGNACION` y el layout del
+  Excel sin confirmar. **Pendiente:** confirmación visual de los 5 menús de
+  Administración por parte del usuario.
+- Sin commit. Rama `feat/unificador_babel`, cambios modified/untracked pendientes.
 
 ---
 
@@ -622,11 +904,34 @@ git branch --show-current
 # Base
 sqlcmd -S localhost -E -C -d BABEL_UNIFICADA -Q "SELECT COUNT(*) FROM rh.Empleado;"
 
-# Limpiar un empleado de prueba (ajusta nombre/apellido)
-sqlcmd -S localhost -E -C -d BABEL_UNIFICADA -Q "SET QUOTED_IDENTIFIER ON; DECLARE @id int = (SELECT IdEmpleado FROM rh.Empleado WHERE Nombre='PRUEBA' AND Paterno='FLUJO'); DELETE FROM ope.AgenteOperativo WHERE IdEmpleado=@id; DELETE FROM rh.EmpleadoCarteraAcceso WHERE IdEmpleado=@id; DELETE FROM rh.EmpleadoCartera WHERE IdEmpleado=@id; DELETE FROM rh.Empleado WHERE IdEmpleado=@id;"
+# Limpieza real aplicada tras la prueba del usuario (2026-11-25)
+# Empleado karla perez perez (Id 2), carga 1 (DETALLE_CARTERA_V2.xlsx) y auditorías 5-7.
+sqlcmd -S localhost -E -C -d BABEL_UNIFICADA -Q "SET QUOTED_IDENTIFIER ON; BEGIN TRAN; DELETE FROM log.Auditoria WHERE IdAuditoria IN (5,6,7); DELETE FROM adm.CargaAsignacionDetalle WHERE IdCarga = 1; DELETE FROM adm.CargaAsignacion WHERE IdCarga = 1; DELETE FROM ope.AgenteOperativo WHERE IdEmpleado = 2; DELETE FROM rh.EmpleadoCarteraAcceso WHERE IdEmpleado = 2; DELETE FROM rh.EmpleadoCartera WHERE IdEmpleado = 2; DELETE FROM rh.Empleado WHERE IdEmpleado = 2; COMMIT;"
 
-# Login directo al SP
-sqlcmd -S localhost -E -C -d BABEL_UNIFICADA -Q "EXEC seg.USP_CONSULTA_USUARIO @Usuario='ADMIN';"
+# Verificar que quedó limpia (todo debe dar 0)
+sqlcmd -S localhost -E -C -d BABEL_UNIFICADA -Q "SET NOCOUNT ON; SELECT (SELECT COUNT(*) FROM rh.Empleado) AS Empleados, (SELECT COUNT(*) FROM rh.EmpleadoCartera) AS Asignaciones, (SELECT COUNT(*) FROM ope.AgenteOperativo) AS Operativo, (SELECT COUNT(*) FROM adm.CargaAsignacion) AS Cargas, (SELECT COUNT(*) FROM log.Auditoria) AS Auditoria;"
+
+# Ejecutar la migración de personal (re-ejecutable; solo lee bases locales)
+sqlcmd -S localhost -E -C -b -d BABEL_UNIFICADA -f 65001 -i "database\BABEL_UNIFICADA\08_mig_personal.sql"
+
+# Verificar la migración: 586 / 586 / 43 y 3 cargas TERMINADA
+sqlcmd -S localhost -E -C -d BABEL_UNIFICADA -Q "SET NOCOUNT ON; SELECT (SELECT COUNT(*) FROM rh.Empleado) AS Empleados, (SELECT COUNT(*) FROM rh.EmpleadoCartera WHERE Activo=1) AS CarterasActivas, (SELECT COUNT(*) FROM rh.EmpleadoCarteraAcceso) AS Accesos; SELECT IdCarga, Entidad, FilasLeidas, FilasInsertadas, Estatus FROM mig.ControlCarga ORDER BY IdCarga;"
+
+# Login directo al SP (ADMIN y GESTOR, ambos con Babel2026!)
+sqlcmd -S localhost -E -C -d BABEL_UNIFICADA -Q "EXEC seg.USP_CONSULTA_USUARIO @Usuario='ADMIN'; EXEC seg.USP_CONSULTA_USUARIO @Usuario='GESTOR';"
+
+# Verificar Gestión: 586 empleados, 7 tipos, 0 cuentas/teléfonos/gestiones/promesas
+sqlcmd -S localhost -E -C -b -d BABEL_UNIFICADA -f 65001 -i "database\BABEL_UNIFICADA\99_verificar.sql"
+
+# Aplicar el script de Herramientas (si no está aplicado)
+sqlcmd -S localhost -E -C -b -d BABEL_UNIFICADA -i "database\BABEL_UNIFICADA\12_herramientas.sql"
+
+# Migración operativa completa de las 13 carteras (SOLO SELECT en 10.80.5.189)
+powershell -NoProfile -ExecutionPolicy Bypass -File "database\BABEL_UNIFICADA\11_mig_operativo_completo.ps1" 2>&1 |
+  Tee-Object -FilePath "$env:TEMP\opencode\mig_completa_final.log"
+
+# Conteos finales por cartera y estado de las cargas
+sqlcmd -S localhost -E -C -d BABEL_UNIFICADA -Q "SET NOCOUNT ON; SELECT c.IdCartera, c.Nombre, COUNT(cu.IdCuenta) AS Cuentas FROM cart.Cartera c LEFT JOIN ope.Cuenta cu ON cu.IdCartera=c.IdCartera AND cu.IdControlLegacy>0 GROUP BY c.IdCartera,c.Nombre ORDER BY c.IdCartera; SELECT Estatus, COUNT(*) AS Cargas FROM mig.ControlCarga WHERE NombreCarga='OPERATIVO_COMPLETO_13_CARTERAS' GROUP BY Estatus;" -W
 
 # Compilar y probar
 dotnet build UnoContact.Crm.slnx --nologo -v minimal

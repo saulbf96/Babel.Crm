@@ -3,8 +3,12 @@ import { perfilGuard, sesionGuard } from './core/sesion/perfil.guard';
 import { Acceso } from './features/acceso/acceso';
 import { AccesoDenegado } from './features/acceso-denegado/acceso-denegado';
 import { Inicio } from './features/inicio/inicio';
+import { Herramienta } from './features/herramienta/herramienta';
 import { Shell } from './layout/shell';
 import { EnConstruccion } from './shared/en-construccion/en-construccion';
+
+/** Perfiles con acceso a Gestión y Herramientas (FRM_GESTION_CARTERA). */
+const gestion = ['Asesor', 'Supervisor', 'Administrador'] as const;
 
 export const routes: Routes = [
   { path: 'acceso', component: Acceso, title: 'Iniciar sesión · UNO Contact CRM' },
@@ -15,13 +19,88 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'inicio' },
       { path: 'inicio', component: Inicio, title: 'Inicio · UNO Contact CRM' },
+
+      // --- Menú Gestión (4 submenús del legacy) ---
       {
         path: 'asesor',
-        canMatch: [perfilGuard('Asesor')],
-        component: EnConstruccion,
-        data: { titulo: 'Gestión de cartera' },
-        title: 'Gestión de cartera · UNO Contact CRM',
+        canMatch: [perfilGuard(...gestion)],
+        loadComponent: () =>
+          import('./features/gestion/gestion').then((m) => m.Gestion),
+        title: 'Nueva Gestion · UNO Contact CRM',
       },
+      {
+        path: 'gestion/bloquear',
+        canMatch: [perfilGuard(...gestion)],
+        component: Herramienta,
+        data: { modo: 'bloquear' },
+        title: 'Bloquear · UNO Contact CRM',
+      },
+      {
+        path: 'gestion/cancelar',
+        canMatch: [perfilGuard(...gestion)],
+        component: Herramienta,
+        data: { modo: 'cancelar' },
+        title: 'Cancelar · UNO Contact CRM',
+      },
+      {
+        path: 'gestion/agendar-llamada',
+        canMatch: [perfilGuard(...gestion)],
+        component: Herramienta,
+        data: { modo: 'agendar-llamada' },
+        title: 'Agendar Llamada · UNO Contact CRM',
+      },
+
+      // --- Menú Herramientas (7 submenús del legacy) ---
+      {
+        path: 'herramientas/buscar',
+        canMatch: [perfilGuard(...gestion)],
+        component: Herramienta,
+        data: { modo: 'buscar' },
+        title: 'Buscar · UNO Contact CRM',
+      },
+      {
+        path: 'herramientas/notas',
+        canMatch: [perfilGuard(...gestion)],
+        component: Herramienta,
+        data: { modo: 'notas' },
+        title: 'Notas · UNO Contact CRM',
+      },
+      {
+        path: 'herramientas/bloc-notas',
+        canMatch: [perfilGuard(...gestion)],
+        component: Herramienta,
+        data: { modo: 'bloc-notas' },
+        title: 'Bloc de Notas · UNO Contact CRM',
+      },
+      {
+        path: 'herramientas/calculadora',
+        canMatch: [perfilGuard(...gestion)],
+        component: Herramienta,
+        data: { modo: 'calculadora' },
+        title: 'Calculadora · UNO Contact CRM',
+      },
+      {
+        path: 'herramientas/actualiza-informacion',
+        canMatch: [perfilGuard(...gestion)],
+        component: Herramienta,
+        data: { modo: 'actualiza-informacion' },
+        title: 'Actualiza Información · UNO Contact CRM',
+      },
+      {
+        path: 'herramientas/expedientes',
+        canMatch: [perfilGuard(...gestion)],
+        component: Herramienta,
+        data: { modo: 'expedientes' },
+        title: 'Expedientes · UNO Contact CRM',
+      },
+      {
+        path: 'herramientas/softphone',
+        canMatch: [perfilGuard(...gestion)],
+        component: Herramienta,
+        data: { modo: 'softphone' },
+        title: 'Softphone · UNO Contact CRM',
+      },
+
       {
         path: 'supervision',
         canMatch: [perfilGuard('Supervisor')],
@@ -29,6 +108,8 @@ export const routes: Routes = [
         data: { titulo: 'Supervisión' },
         title: 'Supervisión · UNO Contact CRM',
       },
+
+      // --- Área de Administración ---
       {
         path: 'administracion',
         pathMatch: 'full',

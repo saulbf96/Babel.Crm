@@ -38,6 +38,10 @@ builder.Services.AddAuthorization(opciones =>
     {
         opciones.AddPolicy(perfil.ToString(), p => p.RequireRole(perfil.ToString()));
     }
+
+    // Gestión la pueden usar asesores, supervisores y administradores (pruebas manuales).
+    opciones.AddPolicy("Gestion", p => p.RequireRole(
+        Perfil.Asesor.ToString(), Perfil.Supervisor.ToString(), Perfil.Administrador.ToString()));
 });
 
 // Máximo 10 intentos de inicio de sesión por minuto por IP.
@@ -114,6 +118,7 @@ if (app.Environment.IsDevelopment())
             contexto.Response.Redirect(urlSpa);
             return;
         }
+
 
         await siguiente();
     });

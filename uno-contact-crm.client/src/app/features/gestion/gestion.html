@@ -1,0 +1,227 @@
+<section class="encabezado">
+  <h1>Gestión de cartera</h1>
+  <p class="subtitulo">
+    Localiza una cuenta de la cartera activa, consulta su información y registra gestiones o promesas.
+  </p>
+  <span class="cartera">Cartera activa: <strong>{{ carteraActiva }}</strong></span>
+</section>
+
+@if (cargando()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+<div class="columnas">
+  <mat-card class="panel">
+    <h2>Cuentas</h2>
+    <div class="filtro">
+      <mat-form-field appearance="outline">
+        <mat-label>Cuenta, control o cliente</mat-label>
+        <input matInput [(ngModel)]="filtro" (keyup.enter)="buscar()" name="filtro" />
+      </mat-form-field>
+      <button mat-flat-button color="primary" type="button" (click)="buscar()">
+        <mat-icon>search</mat-icon> Buscar
+      </button>
+    </div>
+
+    <div class="tabla">
+      @if (cuentas().length === 0) {
+        <p class="vacio">No hay cuentas capturadas en esta cartera.</p>
+      } @else {
+        <table>
+          <thead>
+            <tr><th>Control</th><th>Cuenta</th><th>Cliente</th><th>Saldo</th></tr>
+          </thead>
+          <tbody>
+            @for (fila of cuentas(); track fila.idCuenta) {
+              <tr
+                (click)="seleccionar(fila)"
+                [class.seleccionada]="cuenta()?.idCuenta === fila.idCuenta"
+              >
+                <td>{{ fila.idControlLegacy }}</td>
+                <td>{{ fila.numeroCuenta }}</td>
+                <td>{{ fila.nombreCliente || '—' }}</td>
+                <td>{{ fila.saldo ?? 0 }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    <h3>Capturar cuenta</h3>
+    <div class="formulario">
+      <mat-form-field appearance="outline">
+        <mat-label>ID de control</mat-label>
+        <input matInput type="number" [(ngModel)]="nuevaCuenta.idControlLegacy" name="idControl" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Número de cuenta</mat-label>
+        <input matInput [(ngModel)]="nuevaCuenta.numeroCuenta" name="numeroCuenta" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Cliente</mat-label>
+        <input matInput [(ngModel)]="nuevaCuenta.nombreCliente" name="nombreCliente" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Situación</mat-label>
+        <input matInput [(ngModel)]="nuevaCuenta.situacionCuenta" name="situacion" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Razón de mora</mat-label>
+        <input matInput [(ngModel)]="nuevaCuenta.razonMora" name="razonMora" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Saldo</mat-label>
+        <input matInput type="number" [(ngModel)]="nuevaCuenta.saldo" name="saldo" />
+      </mat-form-field>
+      <button mat-flat-button color="primary" type="button" [disabled]="guardando()" (click)="crearCuenta()">
+        <mat-icon>add</mat-icon> Capturar
+      </button>
+    </div>
+  </mat-card>
+
+  <mat-card class="panel">
+    @if (cuenta(); as c) {
+      <h2>{{ c.numeroCuenta }} · {{ c.nombreCliente || 'Sin cliente' }}</h2>
+      <p class="datos">
+        Cartera {{ c.cartera }} · Control {{ c.idControlLegacy }} · Situación
+        {{ c.situacionCuenta || '—' }} · Saldo {{ c.saldo ?? 0 }}
+      </p>
+
+      <h3>Teléfonos</h3>
+      <div class="formulario compacto">
+        <mat-form-field appearance="outline">
+          <mat-label>Teléfono</mat-label>
+          <input matInput [(ngModel)]="nuevoTelefono.numero" name="telefono" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo</mat-label>
+          <input matInput [(ngModel)]="nuevoTelefono.tipo" name="tipoTel" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Calificación</mat-label>
+          <input matInput type="number" [(ngModel)]="nuevoTelefono.calificacion" name="calificacion" />
+        </mat-form-field>
+        <button mat-stroked-button type="button" [disabled]="guardando()" (click)="registrarTelefono()">
+          Agregar
+        </button>
+      </div>
+      <div class="tabla">
+        @if (telefonos().length === 0) {
+          <p class="vacio">Sin teléfonos.</p>
+        } @else {
+          <table>
+            <thead><tr><th>Número</th><th>Tipo</th><th>Calif.</th><th>Origen</th></tr></thead>
+            <tbody>
+              @for (t of telefonos(); track t.idTelefono) {
+                <tr><td>{{ t.numero }}</td><td>{{ t.tipo || '—' }}</td><td>{{ t.calificacion ?? '—' }}</td><td>{{ t.origen || '—' }}</td></tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+
+      <h3>Registrar gestión</h3>
+      <div class="formulario compacto">
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo de gestión</mat-label>
+          <mat-select [(ngModel)]="nuevaGestion.idTipoGestion" name="tipoGestion">
+            <mat-option [value]="0">Selecciona</mat-option>
+            @for (tipo of tipos(); track tipo.idTipoGestion) {
+              <mat-option [value]="tipo.idTipoGestion">{{ tipo.nombre }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Teléfono marcado</mat-label>
+          <input matInput [(ngModel)]="nuevaGestion.telefonoMarcado" name="telefonoMarcado" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="ancho">
+          <mat-label>Comentario</mat-label>
+          <textarea matInput rows="2" [(ngModel)]="nuevaGestion.comentario" name="comentario"></textarea>
+        </mat-form-field>
+        <button mat-flat-button color="primary" type="button" [disabled]="guardando()" (click)="registrarGestion()">
+          Guardar gestión
+        </button>
+      </div>
+      <div class="tabla">
+        @if (gestiones().length === 0) {
+          <p class="vacio">Sin gestiones registradas.</p>
+        } @else {
+          <table>
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Teléfono</th><th>Comentario</th><th>Empleado</th></tr></thead>
+            <tbody>
+              @for (g of gestiones(); track g.idGestion) {
+                <tr>
+                  <td>{{ g.fechaInicio }}</td>
+                  <td>{{ g.tipoGestion }}</td>
+                  <td>{{ g.telefonoMarcado || '—' }}</td>
+                  <td>{{ g.comentario || '—' }}</td>
+                  <td>{{ g.empleado || '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+
+      <h3>Promesas de pago</h3>
+      <div class="formulario compacto">
+        <mat-form-field appearance="outline">
+          <mat-label>Monto</mat-label>
+          <input matInput type="number" [(ngModel)]="nuevaPromesa.monto" name="monto" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Fecha promesa</mat-label>
+          <input matInput type="date" [(ngModel)]="nuevaPromesa.fechaPromesa" name="fechaPromesa" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Lugar de pago</mat-label>
+          <input matInput [(ngModel)]="nuevaPromesa.lugarPago" name="lugarPago" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Fuente de ingreso</mat-label>
+          <input matInput [(ngModel)]="nuevaPromesa.fuenteIngreso" name="fuenteIngreso" />
+        </mat-form-field>
+        <button mat-stroked-button type="button" [disabled]="guardando()" (click)="registrarPromesa()">
+          Guardar promesa
+        </button>
+      </div>
+      <div class="tabla">
+        @if (promesas().length === 0) {
+          <p class="vacio">Sin promesas registradas.</p>
+        } @else {
+          <table>
+            <thead><tr><th>Monto</th><th>Fecha</th><th>Lugar</th><th>Estatus</th></tr></thead>
+            <tbody>
+              @for (p of promesas(); track p.idPromesa) {
+                <tr><td>{{ p.monto }}</td><td>{{ p.fechaPromesa }}</td><td>{{ p.lugarPago || '—' }}</td><td>{{ p.estatus }}</td></tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+
+      <h3>Demográficos</h3>
+      <div class="tabla">
+        @if (demograficos().length === 0) {
+          <p class="vacio">Sin datos demográficos capturados.</p>
+        } @else {
+          <table>
+            <thead><tr><th>Calle</th><th>Colonia</th><th>C.P.</th><th>Delegación</th><th>Estado</th></tr></thead>
+            <tbody>
+              @for (d of demograficos(); track d.idDemografico) {
+                <tr><td>{{ d.calle || '—' }}</td><td>{{ d.colonia || '—' }}</td><td>{{ d.codigoPostal || '—' }}</td><td>{{ d.delegacion || '—' }}</td><td>{{ d.estado || '—' }}</td></tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    } @else {
+      <div class="sin-seleccion">
+        <mat-icon>search</mat-icon>
+        <p>Selecciona una cuenta para ver su detalle.</p>
+      </div>
+    }
+  </mat-card>
+</div>

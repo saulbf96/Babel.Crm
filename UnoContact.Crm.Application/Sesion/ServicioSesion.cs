@@ -11,7 +11,8 @@ public sealed record SesionDto(
     IReadOnlyList<string> Perfiles,
     IReadOnlyList<OpcionMenuDto> Menu);
 
-public sealed record OpcionMenuDto(string Clave, string Titulo, string Icono, string Ruta);
+public sealed record OpcionMenuDto(
+    string Clave, string Titulo, string Icono, string Ruta, string? Grupo = null);
 
 public interface IServicioSesion
 {
@@ -23,7 +24,7 @@ public sealed class ServicioSesion(IUsuarioActual usuario) : IServicioSesion
     public SesionDto ObtenerSesion()
     {
         var menu = CatalogoMenu.ParaPerfiles(usuario.Perfiles)
-            .Select(o => new OpcionMenuDto(o.Clave, o.Titulo, o.Icono, o.Ruta))
+            .Select(o => new OpcionMenuDto(o.Clave, o.Titulo, o.Icono, o.Ruta, o.Grupo))
             .ToList();
 
         return new SesionDto(

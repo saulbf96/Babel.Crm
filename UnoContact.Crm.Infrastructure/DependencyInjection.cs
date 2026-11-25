@@ -3,10 +3,12 @@ using UnoContact.Crm.Application.Acceso;
 using UnoContact.Crm.Application.Adm;
 using UnoContact.Crm.Application.Carteras;
 using UnoContact.Crm.Application.Catalogos;
+using UnoContact.Crm.Application.Gestion;
 using UnoContact.Crm.Application.Rh;
 using UnoContact.Crm.Infrastructure.Adm;
 using UnoContact.Crm.Infrastructure.Carteras;
 using UnoContact.Crm.Infrastructure.Catalogos;
+using UnoContact.Crm.Infrastructure.Gestion;
 using UnoContact.Crm.Infrastructure.Identidad;
 using UnoContact.Crm.Infrastructure.Rh;
 using UnoContact.Crm.Infrastructure.Seguridad;
@@ -54,6 +56,8 @@ public static class DependencyInjection
         services.AddScoped<IRepositorioCatalogos, RepositorioCatalogos>();
         services.AddScoped<IRepositorioCarteras, RepositorioCarteras>();
         services.AddScoped<IRepositorioCargas, RepositorioCargas>();
+        services.AddScoped<IRepositorioGestion, RepositorioGestion>();
+        services.AddScoped<IRepositorioHerramientas, RepositorioHerramientas>();
         services.AddSingleton<IControlIntentos, ControlIntentosMemoria>();
 
         return services;

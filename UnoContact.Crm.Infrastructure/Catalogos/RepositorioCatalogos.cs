@@ -7,7 +7,7 @@ namespace UnoContact.Crm.Infrastructure.Catalogos;
 /// <summary>Catálogos de BABEL_UNIFICADA para los combos de Administración.</summary>
 public sealed class RepositorioCatalogos(IEjecutorProcedimientos ejecutor) : IRepositorioCatalogos
 {
-    private const string Base = "BABEL_UNIFICADA";
+    private const string Base = "BABEL_UNIFICADA"; 
 
     public Task<IReadOnlyList<CarteraDto>> ConsultarCarterasAsync(int idUsuario, CancellationToken cancelacion = default) =>
         ejecutor.ConsultarAsync(

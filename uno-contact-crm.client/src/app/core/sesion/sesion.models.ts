@@ -5,6 +5,7 @@ export interface OpcionMenu {
   titulo: string;
   icono: string;
   ruta: string;
+  grupo?: string;
 }
 
 export interface Sesion {

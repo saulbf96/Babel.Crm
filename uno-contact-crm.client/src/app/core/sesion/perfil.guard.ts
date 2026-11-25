@@ -11,7 +11,10 @@ export const sesionGuard: CanActivateFn = () =>
  * Oculta rutas a quien no tiene el perfil. Es solo para la experiencia de usuario:
  * la autorización real la valida siempre la API.
  */
-export function perfilGuard(perfil: Perfil): CanMatchFn {
-  return () =>
-    inject(SesionService).tienePerfil(perfil) || inject(Router).parseUrl('/acceso-denegado');
+export function perfilGuard(...perfiles: Perfil[]): CanMatchFn {
+  return () => {
+    const sesion = inject(SesionService);
+    return perfiles.some((perfil) => sesion.tienePerfil(perfil))
+      || inject(Router).parseUrl('/acceso-denegado');
+  };
 }
