@@ -9,9 +9,11 @@ namespace UnoContact.Crm.Infrastructure.Identidad;
 public static class ClaimsBabel
 {
     public const string IdEmpleado = "babel:id_empleado";
+    public const string IdUsuario = "babel:id_usuario";
     public const string IdPuesto = "babel:id_puesto";
     public const string IdArea = "babel:id_area";
-    public const string IdBaseDatos = "babel:id_base_datos";
+    public const string IdCartera = "babel:id_cartera";
+    public const string Cartera = "babel:cartera";
     public const string Perfil = ClaimTypes.Role;
 }
 
@@ -25,7 +27,16 @@ public sealed class UsuarioActualCookie(IHttpContextAccessor accesoHttp) : IUsua
     public int IdEmpleado =>
         int.TryParse(Principal?.FindFirstValue(ClaimsBabel.IdEmpleado), out var id) ? id : 0;
 
+    public int IdUsuario =>
+        int.TryParse(Principal?.FindFirstValue(ClaimsBabel.IdUsuario), out var id) ? id : 0;
+
     public string Usuario => EstaAutenticado ? Principal!.Identity!.Name ?? string.Empty : string.Empty;
+
+    public int IdCartera =>
+        int.TryParse(Principal?.FindFirstValue(ClaimsBabel.IdCartera), out var id) ? id : 0;
+
+    public string Cartera =>
+        Principal?.FindFirstValue(ClaimsBabel.Cartera) ?? string.Empty;
 
     public IReadOnlyCollection<Perfil> Perfiles =>
         EstaAutenticado

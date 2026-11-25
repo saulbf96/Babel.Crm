@@ -2,7 +2,6 @@ import { Routes } from '@angular/router';
 import { perfilGuard, sesionGuard } from './core/sesion/perfil.guard';
 import { Acceso } from './features/acceso/acceso';
 import { AccesoDenegado } from './features/acceso-denegado/acceso-denegado';
-import { Empleados } from './features/empleados/empleados';
 import { Inicio } from './features/inicio/inicio';
 import { Shell } from './layout/shell';
 import { EnConstruccion } from './shared/en-construccion/en-construccion';
@@ -38,8 +37,37 @@ export const routes: Routes = [
       {
         path: 'administracion/empleados',
         canMatch: [perfilGuard('Administrador')],
-        component: Empleados,
+        loadComponent: () =>
+          import('./features/empleados/empleados').then((m) => m.Empleados),
         title: 'Consulta de empleados · UNO Contact CRM',
+      },
+      {
+        path: 'administracion/alta-empleados',
+        canMatch: [perfilGuard('Administrador')],
+        loadComponent: () =>
+          import('./features/alta-empleados/alta-empleados').then((m) => m.AltaEmpleados),
+        title: 'Alta de empleados · UNO Contact CRM',
+      },
+      {
+        path: 'administracion/asignar-personal',
+        canMatch: [perfilGuard('Administrador')],
+        loadComponent: () =>
+          import('./features/asignar-personal/asignar-personal').then((m) => m.AsignarPersonal),
+        title: 'Asignar personal · UNO Contact CRM',
+      },
+      {
+        path: 'administracion/cambiar-cartera',
+        canMatch: [perfilGuard('Administrador')],
+        loadComponent: () =>
+          import('./features/cambiar-cartera/cambiar-cartera').then((m) => m.CambiarCartera),
+        title: 'Cambia cartera · UNO Contact CRM',
+      },
+      {
+        path: 'administracion/carga-asignaciones',
+        canMatch: [perfilGuard('Administrador')],
+        loadComponent: () =>
+          import('./features/carga-asignaciones/carga-asignaciones').then((m) => m.CargaAsignaciones),
+        title: 'Carga de asignaciones · UNO Contact CRM',
       },
       { path: 'acceso-denegado', component: AccesoDenegado, title: 'Acceso denegado · UNO Contact CRM' },
     ],

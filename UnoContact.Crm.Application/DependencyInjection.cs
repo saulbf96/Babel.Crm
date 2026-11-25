@@ -1,4 +1,7 @@
 using UnoContact.Crm.Application.Acceso;
+using UnoContact.Crm.Application.Adm;
+using UnoContact.Crm.Application.Carteras;
+using UnoContact.Crm.Application.Catalogos;
 using UnoContact.Crm.Application.Rh;
 using UnoContact.Crm.Application.Sesion;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +16,9 @@ public static class DependencyInjection
         services.AddScoped<IServicioSesion, ServicioSesion>();
         services.AddScoped<IServicioAcceso, ServicioAcceso>();
         services.AddScoped<IServicioEmpleados, ServicioEmpleados>();
+        services.AddScoped<IServicioCatalogos, ServicioCatalogos>();
+        services.AddScoped<IServicioCarteras, ServicioCarteras>();
+        services.AddScoped<IServicioCargas, ServicioCargas>();
         return services;
     }
 }

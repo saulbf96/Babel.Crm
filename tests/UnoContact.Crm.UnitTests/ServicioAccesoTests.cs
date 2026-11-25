@@ -8,7 +8,7 @@ public sealed class ServicioAccesoTests
 {
     // Datos ficticios.
     private static readonly UsuarioCrm UsuarioPrueba =
-        new(IdEmpleado: 100, Usuario: "PRUEBA", IdPuesto: 14, IdArea: 1, Bloqueado: false, Activo: true, IdBaseDatos: 1, BaseDatos: "BASE_PRUEBA");
+        new(IdUsuario: 1, IdEmpleado: 100, Usuario: "PRUEBA", IdPuesto: 14, IdArea: 1, Bloqueado: false, Activo: true, IdCartera: 1, Cartera: "CARTERA_PRUEBA");
 
     private readonly RepositorioFalso _repositorio = new();
     private readonly IntentosFalsos _intentos = new();

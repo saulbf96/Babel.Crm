@@ -38,6 +38,15 @@ public sealed class SeguridadApiTests(WebApplicationFactory<Program> fabrica) : 
     }
 
     [Fact]
+    public async Task Raiz_en_desarrollo_redirige_a_angular()
+    {
+        var respuesta = await Cliente().GetAsync("/");
+
+        Assert.Equal(HttpStatusCode.Redirect, respuesta.StatusCode);
+        Assert.Equal("https://localhost:51276/", respuesta.Headers.Location?.ToString());
+    }
+
+    [Fact]
     public async Task Respuestas_traen_encabezados_de_seguridad()
     {
         var respuesta = await Cliente().GetAsync("/api/salud");

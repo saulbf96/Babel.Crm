@@ -13,6 +13,7 @@ export class SesionService {
   readonly autenticado = computed(() => this._sesion() !== null);
   readonly menu = computed(() => this._sesion()?.menu ?? []);
   readonly usuario = computed(() => this._sesion()?.usuario ?? '');
+  readonly cartera = computed(() => this._sesion()?.cartera ?? '');
 
   /** Recupera la sesión vigente (si la cookie sigue activa). Sin sesión, queda en null. */
   async cargar(): Promise<void> {
@@ -37,6 +38,14 @@ export class SesionService {
     } finally {
       this._sesion.set(null);
     }
+  }
+
+  /** Cambia la cartera activa de la sesión (reemite la cookie en el servidor). */
+  async cambiarCartera(idCartera: number): Promise<void> {
+    await firstValueFrom(
+      this.http.post<{ idCartera: number; nombre: string }>('/api/sesion/cartera', { idCartera }),
+    );
+    await this.cargar();
   }
 
   /** Se usa cuando el servidor responde 401 (sesión vencida). */

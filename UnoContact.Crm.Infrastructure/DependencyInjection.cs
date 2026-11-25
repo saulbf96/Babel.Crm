@@ -1,6 +1,12 @@
 using UnoContact.Crm.Application.Abstracciones;
 using UnoContact.Crm.Application.Acceso;
+using UnoContact.Crm.Application.Adm;
+using UnoContact.Crm.Application.Carteras;
+using UnoContact.Crm.Application.Catalogos;
 using UnoContact.Crm.Application.Rh;
+using UnoContact.Crm.Infrastructure.Adm;
+using UnoContact.Crm.Infrastructure.Carteras;
+using UnoContact.Crm.Infrastructure.Catalogos;
 using UnoContact.Crm.Infrastructure.Identidad;
 using UnoContact.Crm.Infrastructure.Rh;
 using UnoContact.Crm.Infrastructure.Seguridad;
@@ -40,11 +46,14 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
         services.AddScoped<IUsuarioActual, UsuarioActualCookie>();
         services.AddScoped<IEjecutorProcedimientos, EjecutorProcedimientosSql>();
-        // Login propio del CRM (base BABEL_CRM, esquema seg) con contraseñas PBKDF2.
+        // Login propio del CRM (base BABEL_UNIFICADA, esquema seg) con contraseñas PBKDF2.
         // El login del aplicativo de escritorio quedó fuera: sus procedimientos están cifrados.
         services.AddSingleton<IHashContrasenas, HashContrasenasPbkdf2>();
         services.AddScoped<IRepositorioUsuarios, RepositorioUsuariosCrm>();
         services.AddScoped<IRepositorioEmpleados, RepositorioEmpleados>();
+        services.AddScoped<IRepositorioCatalogos, RepositorioCatalogos>();
+        services.AddScoped<IRepositorioCarteras, RepositorioCarteras>();
+        services.AddScoped<IRepositorioCargas, RepositorioCargas>();
         services.AddSingleton<IControlIntentos, ControlIntentosMemoria>();
 
         return services;

@@ -37,7 +37,7 @@ export class Empleados {
   protected readonly cargando = signal(false);
   protected readonly busco = signal(false);
 
-  protected readonly columnas = ['idEmpleado', 'nombreCompleto', 'puesto', 'departamento', 'cliente', 'rfc', 'email', 'fechaIngreso', 'activo'];
+  protected readonly columnas = ['idEmpleado', 'usuario', 'nombreCompleto', 'puesto', 'departamento', 'cartera', 'turno', 'fechaIngreso', 'activo'];
 
   constructor() {
     void this.buscar();

@@ -6,28 +6,32 @@ using UnoContact.Crm.Infrastructure.Seguridad;
 namespace UnoContact.Crm.Infrastructure.Identidad;
 
 /// <summary>
-/// Usuarios del CRM en la base única BABEL_CRM (esquema seg), con contraseñas propias PBKDF2.
-/// Reemplaza el login de BABEL, cuyos procedimientos están cifrados y cuya llave ya no se tiene.
+/// Usuarios del CRM en la base única BABEL_UNIFICADA (esquema seg), con contraseñas
+/// propias PBKDF2. Reemplaza el login de BABEL, cuyos procedimientos están cifrados
+/// y devolvían la contraseña en claro.
 /// </summary>
 public sealed class RepositorioUsuariosCrm(
     IEjecutorProcedimientos procedimientos,
     IHashContrasenas hash) : IRepositorioUsuarios
 {
+    private const string BaseDatos = "BABEL_UNIFICADA";
+
     private sealed record RenglonUsuario(
-        string Usuario, string Hash, int IdEmpleado, short IdCliente, string Cliente,
+        int IdUsuario, string Usuario, string Hash, int IdEmpleado, short IdCartera, string Cartera,
         short IdPuesto, short IdDepartamento, bool Activo, bool Bloqueado);
 
     public async Task<UsuarioCrm?> ValidarAsync(string usuario, string contrasena, CancellationToken cancelacion)
     {
         var renglones = await procedimientos.ConsultarAsync(
-            "BABEL_CRM.seg.USP_CONSULTA_USUARIO",
+            $"{BaseDatos}.seg.USP_CONSULTA_USUARIO",
             [new ParametroSp("@Usuario", usuario, DbType.AnsiString, 50)],
             r => new RenglonUsuario(
+                Convert.ToInt32(r["IdUsuario"]),
                 Convert.ToString(r["Usuario"]) ?? usuario,
                 Convert.ToString(r["HashContrasena"]) ?? string.Empty,
                 Convert.ToInt32(r["IdEmpleado"]),
-                Convert.ToInt16(r["IdCliente"]),
-                Convert.ToString(r["Cliente"]) ?? string.Empty,
+                r["IdCartera"] is DBNull ? (short)0 : Convert.ToInt16(r["IdCartera"]),
+                r["Cartera"] is DBNull ? string.Empty : Convert.ToString(r["Cartera"]) ?? string.Empty,
                 Convert.ToInt16(r["IdPuesto"]),
                 Convert.ToInt16(r["IdDepartamento"]),
                 Convert.ToBoolean(r["Activo"]),
@@ -41,20 +45,21 @@ public sealed class RepositorioUsuariosCrm(
         if (!hash.Verificar(u.Hash, contrasena)) return null;
 
         return new UsuarioCrm(
+            IdUsuario: u.IdUsuario,
             IdEmpleado: u.IdEmpleado,
             Usuario: u.Usuario,
             IdPuesto: u.IdPuesto,
             IdArea: u.IdDepartamento,
             Bloqueado: u.Bloqueado,
             Activo: u.Activo,
-            IdBaseDatos: u.IdCliente,
-            BaseDatos: u.Cliente);
+            IdCartera: u.IdCartera,
+            Cartera: u.Cartera);
     }
 
     public async Task<bool> DebeCambiarContrasenaAsync(int idEmpleado, CancellationToken cancelacion)
     {
         var renglones = await procedimientos.ConsultarAsync(
-            "BABEL_CRM.seg.USP_DEBE_CAMBIAR",
+            $"{BaseDatos}.seg.USP_DEBE_CAMBIAR",
             [new ParametroSp("@IdEmpleado", idEmpleado, DbType.Int32)],
             _ => true,
             cancelacion);
@@ -63,7 +68,7 @@ public sealed class RepositorioUsuariosCrm(
 
     public Task BloquearAsync(string usuario, string ip, string equipo, byte intentos, CancellationToken cancelacion) =>
         procedimientos.EjecutarAsync(
-            "BABEL_CRM.seg.USP_BLOQUEAR_USUARIO",
+            $"{BaseDatos}.seg.USP_BLOQUEAR_USUARIO",
             [
                 new ParametroSp("@Usuario", usuario, DbType.AnsiString, 50),
                 new ParametroSp("@Ip", ip, DbType.AnsiString, 45),

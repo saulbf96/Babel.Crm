@@ -1,7 +1,7 @@
 # UNO Contact CRM
 
 CRM web que reemplaza a los aplicativos de escritorio **BABEL GESTION** (asesor) y **BABEL ADMINISTRATIVO** (back office).
-Trabaja sobre las mismas bases de SQL Server y sus procedimientos almacenados, para convivir con el escritorio durante la migración.
+Trabaja sobre una **base local unificada** (`BABEL_UNIFICADA`) con `IdCartera` en las tablas de negocio, sin una base por cartera.
 
 ## Tecnología
 
@@ -30,14 +30,24 @@ Dependencias: `Server → Application + Infrastructure`, `Infrastructure → App
 
 ## Inicio de sesión
 
-Login **propio del CRM**: usuarios en la base `BABEL_CRM` (esquema `seg`) con contraseñas **PBKDF2** (nunca en claro). El login del escritorio no se reutiliza porque sus procedimientos están cifrados y la llave ya no se tiene.
+Login **propio del CRM**: usuarios en la base `BABEL_UNIFICADA` (esquema `seg`) con contraseñas **PBKDF2** (nunca en claro). El login del escritorio no se reutiliza porque sus procedimientos están cifrados y la llave ya no se tiene.
 
-- Al tercer intento fallido se bloquea al usuario y se registra en `BABEL_CRM.log.AccesoBloqueo`.
+- Al tercer intento fallido se bloquea al usuario y se registra en `BABEL_UNIFICADA.log.AccesoBloqueo`.
 - El perfil (Asesor, Supervisor, Administrador) sale del **puesto** del usuario: `Seguridad:PuestosPorPerfil` en `appsettings.json` (tabla por confirmar con usuarios).
 - La sesión es una cookie `HttpOnly`, `Secure`, `SameSite=Strict` que vence tras 30 minutos sin actividad.
 - La contraseña nunca se escribe en bitácora y los usuarios inactivos o bloqueados no entran.
 
-Usuario de prueba (solo local): **ADMIN** / **Babel2026!** (créalo con `database/BABEL_CRM/03_seg_usuarios.sql`).
+Usuario de prueba (solo local): **ADMIN** / **Babel2026!** (créalo con `database/BABEL_UNIFICADA/04_seg_usuarios.sql`).
+
+## Módulos de Administración
+
+| Pantalla | Estado |
+|---|---|
+| Consulta de empleados | Funcional |
+| Alta de empleados | Funcional |
+| Cambia cartera | Funcional (cambio de sesión) |
+| Asignar personal a cartera | Funcional (asignar, operativo y restaurar) |
+| Carga de asignaciones | Staging: registra archivo e historial; el proceso real está pendiente |
 
 ## Configuración local (secretos)
 
@@ -46,18 +56,22 @@ Los secretos **no van en el código ni en `appsettings.json`**. En Visual Studio
 ```json
 {
   "ConnectionStrings": {
-    "UnoContact": "Server=localhost;Database=BABEL_CRM;Integrated Security=true;TrustServerCertificate=true"
+    "UnoContact": "Server=localhost;Database=BABEL_UNIFICADA;Integrated Security=true;TrustServerCertificate=true"
   }
 }
 ```
 
-Usa siempre una base **local o de pruebas**, nunca la de producción. La base `BABEL_CRM` se crea con los scripts de `database/BABEL_CRM/` (01, 02 y 03, en ese orden).
+Usa siempre una base **local o de pruebas**, nunca la de producción. La base `BABEL_UNIFICADA` se crea con los scripts de `database/BABEL_UNIFICADA/` (01 a 06, en ese orden).
 
 ## Ejecutar
 
 1. Abre `UnoContact.Crm.slnx` en Visual Studio.
 2. Proyecto de inicio: `UnoContact.Crm.Server` (perfil `https`).
 3. **F5**. Arranca la API y Angular; el navegador abre la pantalla de acceso.
+
+En desarrollo, la raíz del API redirige a Angular (`SpaProxy:Url` en
+`appsettings.Development.json`). Si el navegador no abre, revisa que el perfil sea
+`https` y que `launchBrowser` esté en `true` en `launchSettings.json`.
 
 Se abre **solo Chrome**: el navegador lo abre el proyecto de Angular (`uno-contact-crm.client/.vscode/launch.json`, perfil "localhost (Chrome)"); la API no abre navegador (`launchBrowser: false`).
 

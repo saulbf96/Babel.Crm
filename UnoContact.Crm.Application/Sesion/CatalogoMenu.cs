@@ -17,9 +17,12 @@ public static class CatalogoMenu
         new("inicio", "Inicio", "home", "/inicio", [Perfil.Asesor, Perfil.Supervisor, Perfil.Administrador]),
         new("asesor", "Gestión de cartera", "support_agent", "/asesor", [Perfil.Asesor]),
         new("supervision", "Supervisión", "monitoring", "/supervision", [Perfil.Supervisor]),
-        // Área de Administración. Por ahora una sola pantalla; al sumar más (Alta de empleados,
-        // Asignar personal, etc.) se agruparán bajo un submenú "Administración".
+        // Área de Administración (las cinco pantallas del BABEL ADMINISTRATIVO).
         new("empleados", "Consulta de empleados", "badge", "/administracion/empleados", [Perfil.Administrador]),
+        new("alta-empleados", "Alta de empleados", "person_add", "/administracion/alta-empleados", [Perfil.Administrador]),
+        new("asignar-personal", "Asignar personal", "group_add", "/administracion/asignar-personal", [Perfil.Administrador]),
+        new("cambiar-cartera", "Cambia cartera", "swap_horiz", "/administracion/cambiar-cartera", [Perfil.Administrador]),
+        new("carga-asignaciones", "Carga de asignaciones", "upload_file", "/administracion/carga-asignaciones", [Perfil.Administrador]),
     ];
 
     public static IReadOnlyList<OpcionMenu> ParaPerfiles(IEnumerable<Perfil> perfiles)

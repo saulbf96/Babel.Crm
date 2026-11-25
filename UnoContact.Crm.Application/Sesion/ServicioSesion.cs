@@ -3,7 +3,13 @@ using UnoContact.Crm.Application.Abstracciones;
 namespace UnoContact.Crm.Application.Sesion;
 
 /// <summary>Datos de la sesión que necesita el frontend para armar el menú y las rutas.</summary>
-public sealed record SesionDto(int IdEmpleado, string Usuario, IReadOnlyList<string> Perfiles, IReadOnlyList<OpcionMenuDto> Menu);
+public sealed record SesionDto(
+    int IdEmpleado,
+    string Usuario,
+    int IdCartera,
+    string Cartera,
+    IReadOnlyList<string> Perfiles,
+    IReadOnlyList<OpcionMenuDto> Menu);
 
 public sealed record OpcionMenuDto(string Clave, string Titulo, string Icono, string Ruta);
 
@@ -23,6 +29,8 @@ public sealed class ServicioSesion(IUsuarioActual usuario) : IServicioSesion
         return new SesionDto(
             usuario.IdEmpleado,
             usuario.Usuario,
+            usuario.IdCartera,
+            usuario.Cartera,
             usuario.Perfiles.Order().Select(p => p.ToString()).ToList(),
             menu);
     }

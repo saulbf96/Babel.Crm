@@ -3,6 +3,7 @@ using UnoContact.Crm.Application;
 using UnoContact.Crm.Domain.Seguridad;
 using UnoContact.Crm.Infrastructure;
 using UnoContact.Crm.Server.Controllers;
+using UnoContact.Crm.Server.Infraestructura;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Serilog;
 
@@ -50,6 +51,7 @@ builder.Services.AddRateLimiter(opciones =>
 });
 
 builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ManejadorErrores>();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
@@ -99,6 +101,24 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// En desarrollo, Visual Studio abre la raíz del API; se redirige a Angular
+// para que el navegador caiga directo en la pantalla de login del CRM.
+if (app.Environment.IsDevelopment())
+{
+    var urlSpa = app.Configuration["SpaProxy:Url"] ?? "https://localhost:51276";
+    app.Use(async (contexto, siguiente) =>
+    {
+        if (contexto.Request.Path == "/")
+        {
+            contexto.Response.Redirect(urlSpa);
+            return;
+        }
+
+        await siguiente();
+    });
+}
+
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();

@@ -1,0 +1,100 @@
+<section class="encabezado">
+  <h1>Alta de empleados</h1>
+  <p class="subtitulo">
+    Registra al empleado en la cartera activa de la sesión. El departamento se toma de esa
+    cartera, igual que en el sistema anterior. Para otra cartera, cámbiala primero en
+    “Cambia cartera”.
+  </p>
+</section>
+
+@if (cargando()) {
+  <mat-progress-bar mode="indeterminate" />
+} @else if (catalogos(); as c) {
+  <form class="formulario" [formGroup]="formulario" (ngSubmit)="guardar()">
+    <div class="cartera-activa">
+      <mat-icon>business</mat-icon>
+      <span>Cartera activa: <strong>{{ carteraActual() }}</strong></span>
+    </div>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Puesto</mat-label>
+      <mat-select formControlName="idPuesto">
+        <mat-option [value]="0" disabled>Selecciona un puesto</mat-option>
+        @for (puesto of c.puestos; track puesto.idPuesto) {
+          <mat-option [value]="puesto.idPuesto">{{ puesto.nombre }}</mat-option>
+        }
+      </mat-select>
+      @if (formulario.controls.idPuesto.hasError('min')) {
+        <mat-error>Selecciona un puesto.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Sexo</mat-label>
+      <mat-select formControlName="idSexo">
+        <mat-option [value]="0" disabled>Selecciona un sexo</mat-option>
+        @for (sexo of c.sexos; track sexo.idSexo) {
+          <mat-option [value]="sexo.idSexo">{{ sexo.nombre }}</mat-option>
+        }
+      </mat-select>
+      @if (formulario.controls.idSexo.hasError('min')) {
+        <mat-error>Selecciona un sexo.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Turno</mat-label>
+      <mat-select formControlName="idTurno">
+        <mat-option [value]="0" disabled>Selecciona un turno</mat-option>
+        @for (turno of c.turnos; track turno.idTurno) {
+          <mat-option [value]="turno.idTurno">{{ turno.nombre }}</mat-option>
+        }
+      </mat-select>
+      @if (formulario.controls.idTurno.hasError('min')) {
+        <mat-error>Selecciona un turno.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Nombre</mat-label>
+      <input matInput formControlName="nombre" autocomplete="off" maxlength="100" />
+      @if (formulario.controls.nombre.hasError('required')) {
+        <mat-error>Ingresa el nombre.</mat-error>
+      }
+      @if (formulario.controls.nombre.hasError('maxlength')) {
+        <mat-error>Máximo 100 caracteres.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Apellido paterno</mat-label>
+      <input matInput formControlName="paterno" autocomplete="off" maxlength="100" />
+      @if (formulario.controls.paterno.hasError('required')) {
+        <mat-error>Ingresa el apellido paterno.</mat-error>
+      }
+      @if (formulario.controls.paterno.hasError('maxlength')) {
+        <mat-error>Máximo 100 caracteres.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Apellido materno</mat-label>
+      <input matInput formControlName="materno" autocomplete="off" maxlength="100" />
+      @if (formulario.controls.materno.hasError('required')) {
+        <mat-error>Ingresa el apellido materno.</mat-error>
+      }
+      @if (formulario.controls.materno.hasError('maxlength')) {
+        <mat-error>Máximo 100 caracteres.</mat-error>
+      }
+    </mat-form-field>
+
+    <div class="acciones">
+      <button mat-flat-button color="primary" type="submit" [disabled]="enviando()">
+        <mat-icon>person_add</mat-icon> Dar de alta
+      </button>
+      <button mat-stroked-button type="button" (click)="limpiar()" [disabled]="enviando()">
+        Limpiar
+      </button>
+    </div>
+  </form>
+}

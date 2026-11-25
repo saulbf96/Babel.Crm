@@ -10,6 +10,8 @@ export interface OpcionMenu {
 export interface Sesion {
   idEmpleado: number;
   usuario: string;
+  idCartera: number;
+  cartera: string;
   perfiles: Perfil[];
   menu: OpcionMenu[];
 }

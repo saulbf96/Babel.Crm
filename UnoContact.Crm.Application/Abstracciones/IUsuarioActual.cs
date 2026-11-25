@@ -9,7 +9,14 @@ public interface IUsuarioActual
 
     int IdEmpleado { get; }
 
+    int IdUsuario { get; }
+
     string Usuario { get; }
+
+    /// <summary>Cartera activa de la sesión (la que se cambia desde "Cambia Cartera").</summary>
+    int IdCartera { get; }
+
+    string Cartera { get; }
 
     IReadOnlyCollection<Perfil> Perfiles { get; }
 

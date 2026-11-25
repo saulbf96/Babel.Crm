@@ -40,10 +40,12 @@ public sealed class AccesoController(IServicioAcceso servicio, ILogger<AccesoCon
         var claims = new List<Claim>
         {
             new(ClaimTypes.Name, usuario.Usuario),
+            new(ClaimsBabel.IdUsuario, usuario.IdUsuario.ToString()),
             new(ClaimsBabel.IdEmpleado, usuario.IdEmpleado.ToString()),
             new(ClaimsBabel.IdPuesto, usuario.IdPuesto.ToString()),
             new(ClaimsBabel.IdArea, usuario.IdArea.ToString()),
-            new(ClaimsBabel.IdBaseDatos, usuario.IdBaseDatos.ToString()),
+            new(ClaimsBabel.IdCartera, usuario.IdCartera.ToString()),
+            new(ClaimsBabel.Cartera, usuario.Cartera),
         };
         claims.AddRange(resultado.Perfiles!.Select(p => new Claim(ClaimsBabel.Perfil, p.ToString())));
 
