@@ -6,6 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Deterministic>true</Deterministic>
     <Company>Babel</Company>
-    <Product>Babel CRM</Product>
+    <Product>UNO Contact CRM</Product>
   </PropertyGroup>
 </Project>
