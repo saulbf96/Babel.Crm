@@ -8,8 +8,10 @@ public sealed record SesionDto(
     string Usuario,
     int IdCartera,
     string Cartera,
+    bool DebeCambiarContrasena,
     IReadOnlyList<string> Perfiles,
-    IReadOnlyList<OpcionMenuDto> Menu);
+    IReadOnlyList<OpcionMenuDto> Menu,
+    string? MotivoCambioContrasena = null);
 
 public sealed record OpcionMenuDto(
     string Clave, string Titulo, string Icono, string Ruta, string? Grupo = null);
@@ -32,7 +34,9 @@ public sealed class ServicioSesion(IUsuarioActual usuario) : IServicioSesion
             usuario.Usuario,
             usuario.IdCartera,
             usuario.Cartera,
+            usuario.DebeCambiarContrasena,
             usuario.Perfiles.Order().Select(p => p.ToString()).ToList(),
-            menu);
+            menu,
+            usuario.MotivoCambioContrasena);
     }
 }

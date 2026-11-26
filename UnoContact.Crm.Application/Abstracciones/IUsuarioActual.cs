@@ -18,6 +18,12 @@ public interface IUsuarioActual
 
     string Cartera { get; }
 
+    /// <summary>El usuario tiene pendiente cambiar su contraseña (lo obliga el login).</summary>
+    bool DebeCambiarContrasena => false;
+
+    /// <summary>Por qué debe cambiarla: "Forzado" o "Vencida" (null si no debe).</summary>
+    string? MotivoCambioContrasena => null;
+
     IReadOnlyCollection<Perfil> Perfiles { get; }
 
     bool TienePerfil(Perfil perfil) => Perfiles.Contains(perfil);

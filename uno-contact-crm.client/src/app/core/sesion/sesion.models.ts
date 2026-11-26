@@ -13,10 +13,16 @@ export interface Sesion {
   usuario: string;
   idCartera: number;
   cartera: string;
+  debeCambiarContrasena: boolean;
   perfiles: Perfil[];
   menu: OpcionMenu[];
+  /** Por qué debe cambiar la contraseña: lo forzó un admin o ya venció (90 días). */
+  motivoCambioContrasena?: MotivoCambioContrasena | null;
 }
+
+export type MotivoCambioContrasena = 'Forzado' | 'Vencida';
 
 export interface ResultadoInicioSesion {
   debeCambiarContrasena: boolean;
+  motivoCambioContrasena?: MotivoCambioContrasena | null;
 }

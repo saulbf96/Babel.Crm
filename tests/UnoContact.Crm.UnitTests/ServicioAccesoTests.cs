@@ -79,6 +79,32 @@ public sealed class ServicioAccesoTests
         Assert.False(resultado.Exitoso);
     }
 
+    [Theory]
+    [InlineData(MotivoCambioContrasena.Forzado)]
+    [InlineData(MotivoCambioContrasena.Vencida)]
+    public async Task Contrasena_forzada_o_vencida_exige_cambio_al_entrar(MotivoCambioContrasena motivo)
+    {
+        _repositorio.Usuario = UsuarioPrueba;
+        _repositorio.Motivo = motivo;
+
+        var resultado = await CrearServicio().IniciarSesionAsync(Solicitud());
+
+        Assert.True(resultado.Exitoso);
+        Assert.True(resultado.DebeCambiarContrasena);
+        Assert.Equal(motivo, resultado.MotivoCambio);
+        Assert.Equal(PoliticaContrasena.DiasVigencia, _repositorio.DiasVigenciaConsultados); // 90 días
+    }
+
+    [Fact]
+    public async Task Contrasena_vigente_no_exige_cambio()
+    {
+        _repositorio.Usuario = UsuarioPrueba;
+
+        var resultado = await CrearServicio().IniciarSesionAsync(Solicitud());
+
+        Assert.False(resultado.DebeCambiarContrasena);
+    }
+
     private sealed class RepositorioFalso : IRepositorioUsuarios
     {
         public UsuarioCrm? Usuario { get; set; }
@@ -91,13 +117,26 @@ public sealed class ServicioAccesoTests
             return Task.FromResult(Usuario);
         }
 
-        public Task<bool> DebeCambiarContrasenaAsync(int idEmpleado, CancellationToken cancelacion) => Task.FromResult(false);
+        public MotivoCambioContrasena Motivo { get; set; }
+        public int? DiasVigenciaConsultados { get; private set; }
+
+        public Task<MotivoCambioContrasena> EstadoContrasenaAsync(int idUsuario, int diasVigencia, CancellationToken cancelacion)
+        {
+            DiasVigenciaConsultados = diasVigencia;
+            return Task.FromResult(Motivo);
+        }
+
+        public Task<ReusoContrasena> RevisarReusoAsync(int idUsuario, string contrasena, int recordadas, CancellationToken cancelacion) =>
+            Task.FromResult(ReusoContrasena.Ninguno);
 
         public Task BloquearAsync(string usuario, string ip, string equipo, byte intentos, CancellationToken cancelacion)
         {
             Bloqueado = true;
             return Task.CompletedTask;
         }
+
+        public Task CambiarContrasenaAsync(int idUsuario, string contrasenaNueva, CancellationToken cancelacion) =>
+            Task.CompletedTask;
     }
 
     private sealed class IntentosFalsos : IControlIntentos

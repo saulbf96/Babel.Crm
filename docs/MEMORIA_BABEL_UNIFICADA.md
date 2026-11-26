@@ -809,6 +809,32 @@ esa base y la app levantada por el usuario. Login: `ADMIN` / `Babel2026!`.
   real sigue bloqueado por el SP cifrado `PROCESO_ASIGNACION` y el layout del
   Excel sin confirmar. **Pendiente:** confirmación visual de los 5 menús de
   Administración por parte del usuario.
+
+### 8.1 Estado para continuar mañana (cierre de sesión 2026-11-25)
+
+- Migración completa terminada a las 14:40:15: 435,760 cuentas, 904,915
+  teléfonos, 237,605 gestiones, 20,881 promesas, 318,365 demográficos;
+  `mig.ControlCarga` con 101 `TERMINADA` y 0 `INICIADA`. Carteras 11 y 13 vacías
+  también en el legacy.
+- App ya levantada por el usuario: API `http://localhost:5018`, Angular
+  `https://localhost:51276`. **No iniciar ni detener servidores**; el usuario hace
+  F5 → Ctrl+F5 → relogin (`GESTOR` para Gestión, `ADMIN` para Administración).
+- Verificado por API sin escribir en BD: las 11 pantallas de Gestión/Herramientas
+  y los 5 menús de Administración. Última explicación dada al usuario: **flujo
+  completo de Consulta de empleados** (menú Administración → `perfilGuard` →
+  `/administracion/empleados` → constructor llama `buscar()` →
+  `GET /api/empleados?nombre=...&soloActivos=true` → política `Administrador` →
+  `rh.USP_CONSULTA_EMPLEADOS` → tabla de 9 columnas; es solo lectura).
+- Cuenta de prueba real: `IdCuenta=455198`, `1-1-7168-73347`, FRANCISCO JAVIER
+  MENDEZ RUIZ (4 teléfonos, 29 gestiones, 7 promesas, 2 demográficos).
+- Receso `IdReceso=1` activo desde las 15:38 por una prueba del usuario.
+- Scripts de recarga futura listos en `database/BABEL_UNIFICADA/RECARGA/`
+  (no ejecutados; sintaxis validada).
+- **Pendiente mañana:** (1) confirmación visual pantalla por pantalla, empezando
+  por Consulta de empleados; (2) finalizar el receso activo si ya no se necesita;
+  (3) carga complementaria solo con datos reales y excepciones documentadas;
+  (4) carga de asignaciones real, aún bloqueada por `PROCESO_ASIGNACION` cifrado
+  y layout de Excel sin confirmar.
 - Sin commit. Rama `feat/unificador_babel`, cambios modified/untracked pendientes.
 
 ---

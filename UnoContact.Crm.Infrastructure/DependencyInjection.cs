@@ -5,6 +5,7 @@ using UnoContact.Crm.Application.Carteras;
 using UnoContact.Crm.Application.Catalogos;
 using UnoContact.Crm.Application.Gestion;
 using UnoContact.Crm.Application.Rh;
+using UnoContact.Crm.Application.Usuarios;
 using UnoContact.Crm.Infrastructure.Adm;
 using UnoContact.Crm.Infrastructure.Carteras;
 using UnoContact.Crm.Infrastructure.Catalogos;
@@ -52,6 +53,7 @@ public static class DependencyInjection
         // El login del aplicativo de escritorio quedó fuera: sus procedimientos están cifrados.
         services.AddSingleton<IHashContrasenas, HashContrasenasPbkdf2>();
         services.AddScoped<IRepositorioUsuarios, RepositorioUsuariosCrm>();
+        services.AddScoped<IRepositorioUsuariosAdmin, RepositorioUsuariosAdmin>();
         services.AddScoped<IRepositorioEmpleados, RepositorioEmpleados>();
         services.AddScoped<IRepositorioCatalogos, RepositorioCatalogos>();
         services.AddScoped<IRepositorioCarteras, RepositorioCarteras>();

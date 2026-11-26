@@ -10,8 +10,10 @@ public sealed record ResultadoAcceso(
     string? Mensaje,
     UsuarioCrm? Usuario = null,
     IReadOnlyCollection<Perfil>? Perfiles = null,
-    bool DebeCambiarContrasena = false)
+    MotivoCambioContrasena MotivoCambio = MotivoCambioContrasena.Ninguno)
 {
+    public bool DebeCambiarContrasena => MotivoCambio != MotivoCambioContrasena.Ninguno;
+
     public static ResultadoAcceso Rechazado(string mensaje) => new(false, mensaje);
 }
 
@@ -78,7 +80,8 @@ public sealed class ServicioAcceso(
             return ResultadoAcceso.Rechazado("Tu puesto no tiene acceso al CRM. Repórtalo al área de sistemas.");
         }
 
-        var debeCambiar = await repositorio.DebeCambiarContrasenaAsync(encontrado.IdEmpleado, cancelacion);
-        return new ResultadoAcceso(true, null, encontrado, perfiles, debeCambiar);
+        // Cambio pendiente: forzado por un admin, o contraseña vencida (PoliticaContrasena.DiasVigencia).
+        var motivo = await repositorio.EstadoContrasenaAsync(encontrado.IdUsuario, PoliticaContrasena.DiasVigencia, cancelacion);
+        return new ResultadoAcceso(true, null, encontrado, perfiles, motivo);
     }
 }

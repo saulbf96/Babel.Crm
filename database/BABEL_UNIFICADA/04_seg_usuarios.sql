@@ -105,13 +105,14 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    -- Registra el intento (auditoría).
     INSERT INTO log.AccesoBloqueo (Usuario, Ip, Equipo, Intentos)
     VALUES (@Usuario, @Ip, @Equipo, @Intentos);
 
-    -- Misma regla del .exe: 5 intentos fallidos en 15 minutos bloquean la cuenta.
-    IF (SELECT COUNT(*) FROM log.AccesoBloqueo
-        WHERE Usuario = @Usuario AND Fecha >= DATEADD(MINUTE, -15, SYSDATETIME())) >= 5
-        UPDATE seg.Usuario SET Bloqueado = 1 WHERE Usuario = @Usuario;
+    -- El backend solo llama a este SP cuando ya se alcanzó el umbral de intentos
+    -- (ServicioAcceso.IntentosPermitidos = 3, igual que el .exe BABEL), así que aquí
+    -- se bloquea la cuenta de inmediato. El desbloqueo lo hace un Administrador.
+    UPDATE seg.Usuario SET Bloqueado = 1 WHERE Usuario = @Usuario;
 END
 GO
 

@@ -56,14 +56,44 @@ public sealed class RepositorioUsuariosCrm(
             Cartera: u.Cartera);
     }
 
-    public async Task<bool> DebeCambiarContrasenaAsync(int idEmpleado, CancellationToken cancelacion)
+    public async Task<MotivoCambioContrasena> EstadoContrasenaAsync(int idUsuario, int diasVigencia, CancellationToken cancelacion)
     {
         var renglones = await procedimientos.ConsultarAsync(
-            $"{BaseDatos}.seg.USP_DEBE_CAMBIAR",
-            [new ParametroSp("@IdEmpleado", idEmpleado, DbType.Int32)],
-            _ => true,
+            $"{BaseDatos}.seg.USP_ESTADO_CONTRASENA",
+            [
+                new ParametroSp("@IdUsuario", idUsuario, DbType.Int32),
+                new ParametroSp("@DiasVigencia", diasVigencia, DbType.Int32),
+            ],
+            r => Convert.ToString(r["Motivo"]),
             cancelacion);
-        return renglones.Count >= 1;
+
+        return renglones.FirstOrDefault() switch
+        {
+            null => MotivoCambioContrasena.Ninguno,
+            "VENCIDA" => MotivoCambioContrasena.Vencida,
+            _ => MotivoCambioContrasena.Forzado,
+        };
+    }
+
+    public async Task<ReusoContrasena> RevisarReusoAsync(int idUsuario, string contrasena, int recordadas, CancellationToken cancelacion)
+    {
+        var hashes = await procedimientos.ConsultarAsync(
+            $"{BaseDatos}.seg.USP_CONSULTA_HASHES_RECIENTES",
+            [
+                new ParametroSp("@IdUsuario", idUsuario, DbType.Int32),
+                new ParametroSp("@Recordadas", recordadas, DbType.Int32),
+            ],
+            r => (EsActual: Convert.ToBoolean(r["EsActual"]), Hash: Convert.ToString(r["HashContrasena"]) ?? string.Empty),
+            cancelacion);
+
+        // Cada hash tiene su propia sal: hay que verificar uno por uno (no se puede comparar en SQL).
+        foreach (var (esActual, h) in hashes.OrderByDescending(x => x.EsActual))
+        {
+            if (hash.Verificar(h, contrasena))
+                return esActual ? ReusoContrasena.Actual : ReusoContrasena.Anterior;
+        }
+
+        return ReusoContrasena.Ninguno;
     }
 
     public Task BloquearAsync(string usuario, string ip, string equipo, byte intentos, CancellationToken cancelacion) =>
@@ -74,6 +104,15 @@ public sealed class RepositorioUsuariosCrm(
                 new ParametroSp("@Ip", ip, DbType.AnsiString, 45),
                 new ParametroSp("@Equipo", equipo, DbType.AnsiString, 100),
                 new ParametroSp("@Intentos", intentos, DbType.Byte),
+            ],
+            cancelacion);
+
+    public Task CambiarContrasenaAsync(int idUsuario, string contrasenaNueva, CancellationToken cancelacion) =>
+        procedimientos.EjecutarAsync(
+            $"{BaseDatos}.seg.USP_CAMBIAR_CONTRASENA",
+            [
+                new ParametroSp("@IdUsuario", idUsuario, DbType.Int32),
+                new ParametroSp("@HashContrasena", hash.Hashear(contrasenaNueva), DbType.AnsiString, 200),
             ],
             cancelacion);
 }

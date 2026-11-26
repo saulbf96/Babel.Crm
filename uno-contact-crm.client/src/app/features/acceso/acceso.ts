@@ -7,7 +7,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { SesionService } from '../../core/sesion/sesion.service';
 
@@ -29,7 +28,6 @@ import { SesionService } from '../../core/sesion/sesion.service';
 export class Acceso {
   private readonly sesion = inject(SesionService);
   private readonly router = inject(Router);
-  private readonly avisos = inject(MatSnackBar);
 
   protected readonly enviando = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -37,7 +35,8 @@ export class Acceso {
 
   protected readonly formulario = inject(NonNullableFormBuilder).group({
     usuario: ['', [Validators.required, Validators.maxLength(50)]],
-    contrasena: ['', [Validators.required, Validators.maxLength(100)]],
+    // BABEL: la contraseña admite máximo 30 caracteres (FRM_ACCESO, TXT_CLAVE.MaxLength = 30).
+    contrasena: ['', [Validators.required, Validators.maxLength(30)]],
   });
 
   /** El usuario se escribe en mayúsculas. */
@@ -58,11 +57,8 @@ export class Acceso {
     try {
       const resultado = await this.sesion.iniciarSesion(usuario.trim(), contrasena);
       this.formulario.reset();
-      if (resultado.debeCambiarContrasena) {
-        // Pendiente: pantalla de cambio de contraseña (FRM_CAMBIOPASS).
-        this.avisos.open('Debes cambiar tu contraseña. Repórtalo al área de sistemas.', 'Cerrar');
-      }
-      await this.router.navigateByUrl('/inicio');
+      // Si trae cambio de contraseña pendiente, se fuerza esa pantalla (FRM_CAMBIOPASS).
+      await this.router.navigateByUrl(resultado.debeCambiarContrasena ? '/cambiar-contrasena' : '/inicio');
     } catch (e) {
       this.error.set(this.mensajeDeError(e));
       this.formulario.controls.contrasena.reset();

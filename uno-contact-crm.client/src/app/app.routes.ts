@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { perfilGuard, sesionGuard } from './core/sesion/perfil.guard';
+import { cambioContrasenaGuard, perfilGuard, requiereCambioGuard, sesionGuard } from './core/sesion/perfil.guard';
 import { Acceso } from './features/acceso/acceso';
 import { AccesoDenegado } from './features/acceso-denegado/acceso-denegado';
 import { Inicio } from './features/inicio/inicio';
@@ -13,9 +13,16 @@ const gestion = ['Asesor', 'Supervisor', 'Administrador'] as const;
 export const routes: Routes = [
   { path: 'acceso', component: Acceso, title: 'Iniciar sesión · UNO Contact CRM' },
   {
+    path: 'cambiar-contrasena',
+    canActivate: [requiereCambioGuard],
+    loadComponent: () =>
+      import('./features/cambiar-contrasena/cambiar-contrasena').then((m) => m.CambiarContrasena),
+    title: 'Cambiar contraseña · UNO Contact CRM',
+  },
+  {
     path: '',
     component: Shell,
-    canActivate: [sesionGuard],
+    canActivate: [sesionGuard, cambioContrasenaGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'inicio' },
       { path: 'inicio', component: Inicio, title: 'Inicio · UNO Contact CRM' },
@@ -149,6 +156,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/carga-asignaciones/carga-asignaciones').then((m) => m.CargaAsignaciones),
         title: 'Carga de asignaciones · UNO Contact CRM',
+      },
+      {
+        path: 'administracion/usuarios',
+        canMatch: [perfilGuard('Administrador')],
+        loadComponent: () =>
+          import('./features/usuarios/usuarios').then((m) => m.Usuarios),
+        title: 'Usuarios · UNO Contact CRM',
       },
       { path: 'acceso-denegado', component: AccesoDenegado, title: 'Acceso denegado · UNO Contact CRM' },
     ],

@@ -14,6 +14,7 @@ export class SesionService {
   readonly menu = computed(() => this._sesion()?.menu ?? []);
   readonly usuario = computed(() => this._sesion()?.usuario ?? '');
   readonly cartera = computed(() => this._sesion()?.cartera ?? '');
+  readonly debeCambiarContrasena = computed(() => this._sesion()?.debeCambiarContrasena ?? false);
 
   /** Recupera la sesión vigente (si la cookie sigue activa). Sin sesión, queda en null. */
   async cargar(): Promise<void> {
@@ -30,6 +31,12 @@ export class SesionService {
     );
     await this.cargar();
     return resultado;
+  }
+
+  /** Cambia la contraseña del usuario autenticado y refresca la sesión (baja la bandera). */
+  async cambiarContrasena(nueva: string): Promise<void> {
+    await firstValueFrom(this.http.post('/api/acceso/cambiar-contrasena', { nueva }));
+    await this.cargar();
   }
 
   async cerrarSesion(): Promise<void> {

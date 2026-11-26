@@ -49,6 +49,7 @@ public static class CatalogoMenu
         new("asignar-personal", "Asignar personal", "group_add", "/administracion/asignar-personal", [Perfil.Administrador], "Administración"),
         new("cambiar-cartera", "Cambia cartera", "swap_horiz", "/administracion/cambiar-cartera", [Perfil.Administrador], "Administración"),
         new("carga-asignaciones", "Carga de asignaciones", "upload_file", "/administracion/carga-asignaciones", [Perfil.Administrador], "Administración"),
+        new("usuarios", "Usuarios", "manage_accounts", "/administracion/usuarios", [Perfil.Administrador], "Administración"),
     ];
 
     public static IReadOnlyList<OpcionMenu> ParaPerfiles(IEnumerable<Perfil> perfiles)
