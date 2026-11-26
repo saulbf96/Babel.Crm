@@ -1,7 +1,0 @@
-<Solution>
-  <Project Path="babel.crm.client/babel.crm.client.esproj">
-    <Build />
-    <Deploy />
-  </Project>
-  <Project Path="Babel.Crm.Server/Babel.Crm.Server.csproj" />
-</Solution>

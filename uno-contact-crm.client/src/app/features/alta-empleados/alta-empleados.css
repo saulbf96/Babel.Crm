@@ -1,0 +1,278 @@
+.encabezado {
+  margin-bottom: 1rem;
+}
+
+.subtitulo {
+  margin: 0.25rem 0 0;
+  color: var(--mat-sys-on-surface-variant, #5f6368);
+  font-size: 0.9rem;
+  max-width: 60rem;
+}
+
+.formulario {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.75rem 1rem; /* espacio para el mensaje de error bajo cada campo */
+  max-width: 54rem;
+  align-items: start; /* ningún campo se estira más que su contenido */
+
+  /* Campos compactos: cajas y combos más bajos (Material por defecto mide 56px). */
+  --mat-form-field-container-height: 44px;
+  --mat-form-field-container-vertical-padding: 10px;
+  --mat-form-field-container-text-size: 14px;
+  --mat-select-trigger-text-size: 14px;
+  --mat-form-field-outlined-label-text-size: 14px;
+}
+
+.campanas {
+  grid-column: 1 / -1;
+  align-items: start;
+  margin-bottom: 0.5rem; /* separa la ayuda de "Campaña principal" del renglón de nombre */
+  display: grid;
+  grid-template-columns: minmax(16rem, 2fr) minmax(14rem, 1fr);
+  gap: 0 1rem;
+}
+
+.cartera-activa {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--mat-sys-surface-container-high, #f1f3f4);
+  color: var(--mat-sys-on-surface, #1f1f1f);
+}
+
+/* ---- Horario (reemplaza al turno): renglón propio a todo lo ancho ---- */
+.horario {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 1rem;
+}
+
+.horario .hora {
+  width: 10rem;
+}
+
+.no-aplica {
+  margin-bottom: 1.25rem; /* alinea con las cajas (que reservan espacio para mensajes) */
+}
+
+.jornada {
+  flex-basis: 100%;
+  margin: -0.5rem 0 0.25rem;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.jornada.error-jornada {
+  color: #c20412;
+}
+
+/* ---- Permisos ---- */
+.permisos {
+  grid-column: 1 / -1;
+  margin-top: 0.25rem;
+}
+
+.permisos h3 {
+  margin: 0;
+  font-size: 15px;
+  color: #012169;
+}
+
+.permisos-ayuda {
+  margin: 2px 0 10px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* ---- La persona ya existe ---- */
+.duplicado {
+  grid-column: 1 / -1;
+  border: 1px solid #f5d9a8;
+  border-left: 4px solid #e08a00;
+  background: #fffaf0;
+  border-radius: 12px;
+  padding: 14px 18px 8px;
+}
+
+.duplicado-titulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #8a5300;
+}
+
+.duplicado-titulo h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.duplicado-ayuda {
+  margin: 4px 0 10px 34px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.coincidencia {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: #fff;
+  border: 1px solid #eef0f3;
+  border-radius: 8px;
+}
+
+.coincidencia-datos {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.coincidencia-acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.secundario {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.chip {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.chip.ok {
+  background: #e3f3e8;
+  color: #1f7a3d;
+}
+
+.chip.no {
+  background: #eceff3;
+  color: #64748b;
+}
+
+.duplicado-pie {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.homonimo {
+  color: #64748b;
+}
+
+.acciones {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* ---- Historial de altas ---- */
+.historial {
+  margin-top: 2rem;
+  max-width: 70rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e3e8ef;
+}
+
+.historial-encabezado {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.historial-encabezado h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #012169;
+}
+
+.historial-rango {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.historial-filtros {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0;
+  --mat-form-field-container-height: 44px;
+  --mat-form-field-container-vertical-padding: 10px;
+}
+
+.historial-filtros .fecha {
+  width: 11rem;
+}
+
+.historial-filtros .espacio {
+  flex: 1;
+}
+
+.btn-excel {
+  border-color: #1d6f42;
+  color: #1d6f42;
+}
+
+.icono-excel {
+  width: 20px;
+  height: 20px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.error-rango {
+  color: #c20412;
+  margin: 0 0 8px;
+}
+
+.tabla-contenedor {
+  overflow-x: auto;
+}
+
+.tabla-contenedor table {
+  width: 100%;
+}
+
+.vacio {
+  color: #64748b;
+  padding: 16px 4px;
+}
+
+.chip {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.chip.ok {
+  background: #e3f3e8;
+  color: #1f7a3d;
+}
+
+.chip.no {
+  background: #eceff3;
+  color: #64748b;
+}

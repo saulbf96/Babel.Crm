@@ -1,0 +1,98 @@
+.contenedor {
+  height: 100vh;
+}
+
+.menu {
+  width: 264px;
+}
+
+/* Opciones del menú: texto completo, sin "…". Si no cabe, pasa a una segunda línea. */
+.menu a.mat-mdc-list-item {
+  height: auto;
+  min-height: 44px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.menu [matListItemTitle] {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.25;
+}
+
+.grupo {
+  margin: 12px 16px 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5f6368;
+}
+
+a.submenu {
+  padding-left: 28px;
+}
+
+.barra {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+}
+
+.barra button {
+  color: inherit;
+}
+
+.titulo {
+  margin-left: 8px;
+}
+
+.espacio {
+  flex: 1;
+}
+
+/* Reloj de inactividad (30:00 hacia abajo) */
+.reloj {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 16px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font: var(--mat-sys-body-medium);
+  font-variant-numeric: tabular-nums;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.reloj mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.reloj.aviso {
+  background: #f5a623;
+  color: #1f1f1f;
+}
+
+.reloj.critico {
+  background: #c20412;
+  color: #ffffff;
+  animation: parpadeo 1s steps(2, start) infinite;
+}
+
+@keyframes parpadeo {
+  to { opacity: 0.6; }
+}
+
+.usuario {
+  font: var(--mat-sys-body-medium);
+  margin-right: 8px;
+}
+
+.contenido {
+  padding: 24px;
+}

@@ -1,0 +1,59 @@
+<main class="contenedor">
+  <section class="acceso">
+    <img class="logo" src="brand/uno-logo-white.png" alt="UNO Contact Solutions Bureau" />
+
+    <mat-card class="tarjeta" appearance="outlined">
+      @if (enviando()) {
+        <mat-progress-bar mode="indeterminate" />
+      }
+      <mat-card-header>
+        <mat-card-title>Iniciar sesión</mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <form [formGroup]="formulario" (ngSubmit)="entrar()" autocomplete="off">
+          <mat-form-field appearance="outline" hideRequiredMarker>
+            <mat-label>Usuario</mat-label>
+            <input matInput formControlName="usuario" (input)="aMayusculas()" autocomplete="username" maxlength="50" />
+            <mat-icon matPrefix>person</mat-icon>
+            @if (formulario.controls.usuario.hasError('required')) {
+              <mat-error>Escribe tu usuario.</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" hideRequiredMarker>
+            <mat-label>Contraseña</mat-label>
+            <input
+              matInput
+              formControlName="contrasena"
+              [type]="verContrasena() ? 'text' : 'password'"
+              autocomplete="current-password"
+              maxlength="30"
+            />
+            <mat-icon matPrefix>lock</mat-icon>
+            <button
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="verContrasena.set(!verContrasena())"
+              [attr.aria-label]="verContrasena() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            >
+              <mat-icon>{{ verContrasena() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            @if (formulario.controls.contrasena.hasError('required')) {
+              <mat-error>Escribe tu contraseña.</mat-error>
+            }
+          </mat-form-field>
+
+          @if (error(); as mensaje) {
+            <p class="error" role="alert">{{ mensaje }}</p>
+          }
+
+          <button class="btn-entrar" mat-flat-button type="submit" [disabled]="enviando()">Entrar</button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <p class="pie">UNO Contact Solutions Bureau · Comunicación multicanal en un solo lugar</p>
+  </section>
+</main>

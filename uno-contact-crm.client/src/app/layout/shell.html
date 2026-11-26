@@ -1,0 +1,50 @@
+<mat-sidenav-container class="contenedor">
+  <mat-sidenav #menu [mode]="esMovil() ? 'over' : 'side'" [opened]="!esMovil()" class="menu">
+    <mat-nav-list>
+      @for (opcion of sesion.menu(); track opcion.clave; let i = $index) {
+        @if (opcion.grupo && (i === 0 || sesion.menu()[i - 1].grupo !== opcion.grupo)) {
+          <h3 class="grupo">{{ opcion.grupo }}</h3>
+        }
+        <a
+          mat-list-item
+          [routerLink]="opcion.ruta"
+          routerLinkActive
+          #activo="routerLinkActive"
+          [activated]="activo.isActive"
+          (click)="esMovil() && menu.close()"
+          [class.submenu]="!!opcion.grupo"
+        >
+          <mat-icon matListItemIcon>{{ opcion.icono }}</mat-icon>
+          <span matListItemTitle>{{ opcion.titulo }}</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar class="barra">
+      <button mat-icon-button (click)="menu.toggle()" aria-label="Mostrar u ocultar menú">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span class="titulo">UNO Contact</span>
+      <span class="espacio"></span>
+      <span
+        class="reloj"
+        [class.aviso]="inactividad.nivel() === 'aviso'"
+        [class.critico]="inactividad.nivel() === 'critico'"
+        role="timer"
+        [matTooltip]="'La sesión se cierra tras ' + minutosInactividad + ' minutos sin actividad. Cualquier movimiento reinicia el reloj.'"
+      >
+        <mat-icon>timer</mat-icon>{{ inactividad.reloj() }}
+      </span>
+      <span class="usuario">{{ sesion.usuario() }} · {{ sesion.cartera() }}</span>
+      <button mat-icon-button (click)="salir()" aria-label="Cerrar sesión" title="Cerrar sesión">
+        <mat-icon>logout</mat-icon>
+      </button>
+    </mat-toolbar>
+
+    <main class="contenido">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

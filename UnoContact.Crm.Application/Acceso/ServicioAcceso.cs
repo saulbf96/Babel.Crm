@@ -1,0 +1,106 @@
+using UnoContact.Crm.Domain.Seguridad;
+using Microsoft.Extensions.Options;
+
+namespace UnoContact.Crm.Application.Acceso;
+
+public sealed record SolicitudAcceso(string Usuario, string Contrasena, string Ip, string Equipo);
+
+public sealed record ResultadoAcceso(
+    bool Exitoso,
+    string? Mensaje,
+    UsuarioCrm? Usuario = null,
+    IReadOnlyCollection<Perfil>? Perfiles = null,
+    MotivoCambioContrasena MotivoCambio = MotivoCambioContrasena.Ninguno,
+    // Opciones de menú que puede usar (ReglasPermisos). Van en la cookie.
+    IReadOnlyCollection<string>? Permisos = null)
+{
+    public bool DebeCambiarContrasena => MotivoCambio != MotivoCambioContrasena.Ninguno;
+
+    public static ResultadoAcceso Rechazado(string mensaje) => new(false, mensaje);
+}
+
+public interface IServicioAcceso
+{
+    Task<ResultadoAcceso> IniciarSesionAsync(SolicitudAcceso solicitud, CancellationToken cancelacion = default);
+}
+
+/// <summary>
+/// Inicio de sesión con usuario y contraseña de BABEL. Replica las reglas de FRM_ACCESO
+/// (bloqueo al tercer intento fallido, usuario bloqueado, cambio de contraseña pendiente)
+/// sin el acceso "fuera de línea" ni el registro de contraseñas en la bitácora.
+/// </summary>
+public sealed class ServicioAcceso(
+    IRepositorioUsuarios repositorio,
+    IControlIntentos intentos,
+    IOptions<MapeoPerfiles> mapeo,
+    TimeProvider reloj) : IServicioAcceso
+{
+    public const int IntentosPermitidos = 3;
+
+    // Mensaje único para no revelar si el usuario existe.
+    public const string MensajeInvalido = "Usuario y/o contraseña incorrectos.";
+
+    public async Task<ResultadoAcceso> IniciarSesionAsync(SolicitudAcceso solicitud, CancellationToken cancelacion = default)
+    {
+        // BABEL convierte el usuario a mayúsculas mientras se escribe y hace Trim a ambos campos.
+        var usuario = solicitud.Usuario?.Trim().ToUpperInvariant() ?? string.Empty;
+        var contrasena = solicitud.Contrasena?.Trim() ?? string.Empty;
+        if (usuario.Length == 0 || contrasena.Length == 0)
+        {
+            return ResultadoAcceso.Rechazado("Escribe tu usuario y contraseña.");
+        }
+
+        var encontrado = await repositorio.ValidarAsync(usuario, contrasena, cancelacion);
+        if (encontrado is null)
+        {
+            var fallos = intentos.RegistrarFallo(usuario);
+            if (fallos >= IntentosPermitidos)
+            {
+                await repositorio.BloquearAsync(usuario, solicitud.Ip, solicitud.Equipo, (byte)fallos, cancelacion);
+                intentos.Reiniciar(usuario);
+                return ResultadoAcceso.Rechazado("El usuario se bloqueó por intentos fallidos. Repórtalo al área de sistemas.");
+            }
+
+            return ResultadoAcceso.Rechazado(MensajeInvalido);
+        }
+
+        intentos.Reiniciar(usuario);
+
+        if (encontrado.Bloqueado)
+        {
+            return ResultadoAcceso.Rechazado("El usuario se encuentra bloqueado. Repórtalo al área de sistemas.");
+        }
+
+        // BABEL no revisa la columna ACTIVO al entrar; aquí se exige. "Por confirmar con usuarios".
+        if (!encontrado.Activo)
+        {
+            return ResultadoAcceso.Rechazado("El usuario no está activo. Repórtalo al área de sistemas.");
+        }
+
+        var perfiles = mapeo.Value.PerfilesDe(encontrado.IdPuesto);
+        // Permisos = lo de su puesto + ajustes que le dio un administrador (ROOT = todo).
+        var ajustes = await repositorio.PermisosAsync(encontrado.IdUsuario, cancelacion);
+        var permisos = ReglasPermisos.Efectivos(perfiles, encontrado.EsRoot, ajustes);
+        if (!permisos.Any(p => p != ReglasPermisos.Inicio))
+        {
+            return ResultadoAcceso.Rechazado("Tu puesto no tiene acceso al sistema. Repórtalo al área de sistemas.");
+        }
+
+        // Horario de acceso (PoliticaHorario): fuera de horario no puede iniciar sesión.
+        if (encontrado is { AplicaHorario: true, HoraEntrada: { } entrada, HoraSalida: { } salida })
+        {
+            var ahora = TimeOnly.FromDateTime(reloj.GetLocalNow().DateTime);
+            if (!PoliticaHorario.PuedeEntrar(ahora, entrada, salida))
+            {
+                return ResultadoAcceso.Rechazado(
+                    $"Estás fuera de tu horario de acceso ({entrada:HH\\:mm} a {salida:HH\\:mm}). " +
+                    $"Puedes entrar desde las {PoliticaHorario.DesdeCuandoPuedeEntrar(entrada):HH\\:mm}. " +
+                    "Si tu horario cambió, pide a tu administrador que lo actualice.");
+            }
+        }
+
+        // Cambio pendiente: forzado por un admin, o contraseña vencida (PoliticaContrasena.DiasVigencia).
+        var motivo = await repositorio.EstadoContrasenaAsync(encontrado.IdUsuario, PoliticaContrasena.DiasVigencia, cancelacion);
+        return new ResultadoAcceso(true, null, encontrado, perfiles, motivo, permisos.ToList());
+    }
+}

@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/UnoContact.Crm.IntegrationTests/UnoContact.Crm.IntegrationTests.csproj" />
+    <Project Path="tests/UnoContact.Crm.UnitTests/UnoContact.Crm.UnitTests.csproj" />
+  </Folder>
+  <Project Path="UnoContact.Crm.Application/UnoContact.Crm.Application.csproj" />
+  <Project Path="uno-contact-crm.client/uno-contact-crm.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="UnoContact.Crm.Domain/UnoContact.Crm.Domain.csproj" />
+  <Project Path="UnoContact.Crm.Infrastructure/UnoContact.Crm.Infrastructure.csproj" />
+  <Project Path="UnoContact.Crm.Server/UnoContact.Crm.Server.csproj" />
+</Solution>

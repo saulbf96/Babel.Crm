@@ -1,0 +1,103 @@
+<section class="pagina">
+  <header>
+    <h1>Usuarios</h1>
+    <p class="subtitulo">
+      Usuarios de la campaña <strong>{{ cartera() }}</strong>. Puedes desbloquear y forzar el cambio de contraseña.
+    </p>
+  </header>
+
+  <div class="filtros">
+    <mat-checkbox
+      [checked]="soloBloqueados()"
+      (change)="alternarSoloBloqueados($event.checked)"
+    >
+      Solo bloqueados
+    </mat-checkbox>
+    <button mat-stroked-button type="button" (click)="cargar()">
+      <mat-icon>refresh</mat-icon> Actualizar
+    </button>
+  </div>
+
+  @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <div class="tabla-contenedor">
+    <table mat-table [dataSource]="pag.pagina()" class="tabla">
+      <ng-container matColumnDef="num">
+        <th mat-header-cell *matHeaderCellDef class="col-num">#</th>
+        <td mat-cell *matCellDef="let fila; let i = index" class="col-num">{{ pag.numero(i) }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="usuario">
+        <th mat-header-cell *matHeaderCellDef>Usuario</th>
+        <td mat-cell *matCellDef="let u">{{ u.usuario }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="empleado">
+        <th mat-header-cell *matHeaderCellDef>Empleado</th>
+        <td mat-cell *matCellDef="let u">{{ u.empleado || '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="puesto">
+        <th mat-header-cell *matHeaderCellDef>Puesto</th>
+        <td mat-cell *matCellDef="let u">{{ u.puesto || '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="estatus">
+        <th mat-header-cell *matHeaderCellDef>Estatus</th>
+        <td mat-cell *matCellDef="let u">
+          @let e = estatus(u);
+          <span [class]="e.clase">{{ e.texto }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="acciones">
+        <th mat-header-cell *matHeaderCellDef>Acciones</th>
+        <td mat-cell *matCellDef="let u">
+          <div class="acciones">
+            @if (!u.activo) {
+              <span class="sin-acciones">Dado de baja</span>
+            } @else if (u.bloqueado) {
+              <button mat-flat-button color="primary" type="button" (click)="desbloquear(u)">
+                <mat-icon>lock_open</mat-icon> Desbloquear
+              </button>
+            } @else {
+              <button mat-stroked-button type="button" (click)="bloquear(u)">
+                <mat-icon>lock</mat-icon> Bloquear
+              </button>
+            }
+            @if (u.activo && !u.debeCambiarContrasena) {
+              <button mat-stroked-button type="button" (click)="forzarCambio(u)">
+                <mat-icon>password</mat-icon> Forzar cambio
+              </button>
+            }
+            @if (u.activo && u.usuario !== usuarioSesion()) {
+              <button mat-stroked-button type="button" (click)="restablecer(u)">
+                <mat-icon>key</mat-icon> Restablecer contraseña
+              </button>
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+      <tr mat-row *matRowDef="let fila; columns: columnas"></tr>
+    </table>
+
+    @if (pag.total() > tamanos[0]) {
+      <mat-paginator
+        [length]="pag.total()"
+        [pageIndex]="pag.indice()"
+        [pageSize]="pag.tamano()"
+        [pageSizeOptions]="tamanos"
+        (page)="pag.cambiar($event)"
+        showFirstLastButtons
+      />
+    }
+
+    @if (!cargando() && usuarios().length === 0) {
+      <p class="vacio">No hay usuarios en esta campaña{{ soloBloqueados() ? ' que estén bloqueados' : '' }}.</p>
+    }
+  </div>
+</section>

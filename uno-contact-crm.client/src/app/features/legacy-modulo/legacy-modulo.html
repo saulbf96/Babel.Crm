@@ -1,0 +1,34 @@
+<section class="encabezado">
+  <h1>{{ titulo() }}</h1>
+  <p class="subtitulo">{{ descripcion() }}</p>
+</section>
+
+<mat-card class="tarjeta">
+  <h2><mat-icon>map</mat-icon> Equivalencia con el sistema anterior</h2>
+  <dl>
+    <dt>Formulario legacy</dt>
+    <dd>{{ formulario() }}</dd>
+    <dt>Procedimientos</dt>
+    <dd>
+      <mat-chip-set>
+        @for (sp of procedimientos(); track sp) {
+          <mat-chip>{{ sp }}</mat-chip>
+        }
+      </mat-chip-set>
+    </dd>
+    <dt>Tablas legacy</dt>
+    <dd>
+      <mat-chip-set>
+        @for (tabla of tablas(); track tabla) {
+          <mat-chip>{{ tabla }}</mat-chip>
+        }
+      </mat-chip-set>
+    </dd>
+    <dt>Estado</dt>
+    <dd><span class="estado">{{ estado() }}</span></dd>
+  </dl>
+
+  <a mat-flat-button color="primary" routerLink="/asesor">
+    <mat-icon>arrow_forward</mat-icon> Abrir gestión de cartera
+  </a>
+</mat-card>

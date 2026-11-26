@@ -1,0 +1,299 @@
+<section class="encabezado">
+  <h1>Alta de empleados</h1>
+  <p class="subtitulo">Elige una o varias campañas; la principal es con la que entra al sistema.</p>
+</section>
+
+@if (cargando()) {
+  <mat-progress-bar mode="indeterminate" />
+} @else if (catalogos(); as c) {
+  <form class="formulario" [formGroup]="formulario" (ngSubmit)="guardar()">
+    <div class="campanas">
+      <mat-form-field appearance="outline" class="campanas-lista">
+        <mat-label>Campañas</mat-label>
+        <mat-select formControlName="carteras" multiple>
+          <mat-select-trigger>{{ resumenCampanas() }}</mat-select-trigger>
+          @for (c of carterasDisponibles(); track c.idCartera) {
+            <mat-option [value]="c.idCartera">{{ c.nombre }}</mat-option>
+          }
+        </mat-select>
+        @if (formulario.controls.carteras.hasError('required')) {
+          <mat-error>Elige al menos una campaña.</mat-error>
+        }
+      </mat-form-field>
+      @if (formulario.controls.carteras.value.length > 1) {
+        <mat-form-field appearance="outline" class="campana-principal" subscriptSizing="dynamic">
+          <mat-label>Campaña principal</mat-label>
+          <mat-select formControlName="carteraPrincipal">
+            @for (c of carterasElegidas(); track c.idCartera) {
+              <mat-option [value]="c.idCartera">{{ c.nombre }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>Con la que entra al sistema.</mat-hint>
+        </mat-form-field>
+      }
+    </div>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Nombre</mat-label>
+      <input matInput formControlName="nombre" autocomplete="off" maxlength="100" class="mayusculas" [placeholder]="ejemplos.nombre" />
+      @if (formulario.controls.nombre.hasError('required')) {
+        <mat-error>Ingresa el nombre.</mat-error>
+      }
+      @if (formulario.controls.nombre.hasError('maxlength')) {
+        <mat-error>Máximo 100 caracteres.</mat-error>
+      }
+      @if (formulario.controls.nombre.hasError('letras')) {
+        <mat-error>Solo letras y espacios.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Apellido paterno</mat-label>
+      <input matInput formControlName="paterno" autocomplete="off" maxlength="100" class="mayusculas" [placeholder]="ejemplos.paterno" />
+      @if (formulario.controls.paterno.hasError('required')) {
+        <mat-error>Ingresa el apellido paterno.</mat-error>
+      }
+      @if (formulario.controls.paterno.hasError('maxlength')) {
+        <mat-error>Máximo 100 caracteres.</mat-error>
+      }
+      @if (formulario.controls.paterno.hasError('letras')) {
+        <mat-error>Solo letras y espacios.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Apellido materno</mat-label>
+      <input matInput formControlName="materno" autocomplete="off" maxlength="100" class="mayusculas" [placeholder]="ejemplos.materno" />
+      @if (formulario.controls.materno.hasError('required')) {
+        <mat-error>Ingresa el apellido materno.</mat-error>
+      }
+      @if (formulario.controls.materno.hasError('maxlength')) {
+        <mat-error>Máximo 100 caracteres.</mat-error>
+      }
+      @if (formulario.controls.materno.hasError('letras')) {
+        <mat-error>Solo letras y espacios.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Puesto</mat-label>
+      <mat-select formControlName="idPuesto">
+        <mat-option [value]="0" disabled>Selecciona un puesto</mat-option>
+        @for (puesto of c.puestos; track puesto.idPuesto) {
+          <mat-option [value]="puesto.idPuesto">{{ puesto.nombre }}</mat-option>
+        }
+      </mat-select>
+      @if (formulario.controls.idPuesto.hasError('min')) {
+        <mat-error>Selecciona un puesto.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Sexo</mat-label>
+      <mat-select formControlName="idSexo">
+        <mat-option [value]="0" disabled>Selecciona un sexo</mat-option>
+        @for (sexo of c.sexos; track sexo.idSexo) {
+          <mat-option [value]="sexo.idSexo">{{ sexo.nombre }}</mat-option>
+        }
+      </mat-select>
+      @if (formulario.controls.idSexo.hasError('min')) {
+        <mat-error>Selecciona un sexo.</mat-error>
+      }
+    </mat-form-field>
+
+    <div class="horario">
+      <mat-form-field appearance="outline" class="hora">
+        <mat-label>Hora de entrada</mat-label>
+        <input matInput type="time" formControlName="horaEntrada" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="hora">
+        <mat-label>Hora de salida</mat-label>
+        <input matInput type="time" formControlName="horaSalida" />
+      </mat-form-field>
+      <mat-checkbox formControlName="noAplicaHorario" class="no-aplica">
+        Sin restricción de horario
+      </mat-checkbox>
+      <p class="jornada" [class.error-jornada]="!estadoHorario().valido">{{ estadoHorario().texto }}</p>
+    </div>
+
+    @if (puedeDarPermisos && opcionesPermiso().length) {
+      <section class="permisos">
+        <h3>Permisos</h3>
+        <p class="permisos-ayuda">
+          Se marcan solos con lo de su puesto; agrega o quita lo que necesite.
+          @if (!esRoot) { Solo puedes dar permisos que tú tienes. }
+        </p>
+        <app-permisos-editor
+          [opciones]="opcionesPermiso()"
+          [(seleccionados)]="permisos"
+          [editables]="permisosQuePuedoDar"
+        />
+      </section>
+    }
+
+    @if (coincidencias().length) {
+      <div class="duplicado" role="alert">
+        <div class="duplicado-titulo">
+          <mat-icon>person_search</mat-icon>
+          <h2>Esta persona ya está registrada. No se dio de alta.</h2>
+        </div>
+        <p class="duplicado-ayuda">
+          En lugar de crearla otra vez, elige qué hacer con el registro que ya existe:
+        </p>
+
+        @for (c of coincidencias(); track c.idEmpleado) {
+          <div class="coincidencia">
+            <div class="coincidencia-datos">
+              <strong>{{ c.nombreCompleto }}</strong>
+              <span class="secundario">
+                {{ c.puesto }} · ingreso {{ c.fechaIngreso | date: 'dd/MM/yyyy' }}
+                · usuario {{ c.usuario || 'sin usuario' }}
+              </span>
+              <span class="secundario">
+                @if (!c.activo) {
+                  <span class="chip no">Dado de baja</span>
+                } @else {
+                  <span class="chip ok">Activo</span> en {{ c.carteraActiva || 'sin cartera' }}
+                }
+              </span>
+            </div>
+            <div class="coincidencia-acciones">
+              @if (!c.activo) {
+                <a mat-stroked-button routerLink="/administracion/bajas">
+                  <mat-icon>person_add</mat-icon> Reactivar en Bajas de personal
+                </a>
+              } @else if (c.enEstaCartera) {
+                <span class="secundario">Ya está en {{ carteraActual() }}.</span>
+              } @else {
+                <button mat-flat-button color="primary" type="button" (click)="moverAEstaCartera(c)" [disabled]="enviando()">
+                  <mat-icon>move_down</mat-icon> Moverlo a {{ carteraActual() }}
+                </button>
+                @if (!c.tieneAcceso) {
+                  <button mat-stroked-button type="button" (click)="darAcceso(c)" [disabled]="enviando()">
+                    <mat-icon>add_link</mat-icon> Darle acceso también
+                  </button>
+                } @else {
+                  <span class="secundario">Ya tiene acceso a {{ carteraActual() }}.</span>
+                }
+              }
+            </div>
+          </div>
+        }
+
+        <div class="duplicado-pie">
+          <button mat-button type="button" (click)="coincidencias.set([])" [disabled]="enviando()">Cancelar</button>
+          <button mat-button type="button" class="homonimo" (click)="guardar(true)" [disabled]="enviando()">
+            Es otra persona con el mismo nombre: darla de alta
+          </button>
+        </div>
+      </div>
+    }
+
+    <div class="acciones">
+      <button mat-flat-button color="primary" type="submit" [disabled]="enviando()">
+        <mat-icon>person_add</mat-icon> Dar de alta
+      </button>
+      <button mat-stroked-button type="button" (click)="limpiar()" [disabled]="enviando()">
+        Limpiar
+      </button>
+    </div>
+  </form>
+}
+
+<!-- Historial de altas: por defecto la semana actual; con fechas para consultar y exportar otro rango. -->
+<section class="historial">
+  <div class="historial-encabezado">
+    <h2>Altas registradas</h2>
+    <span class="historial-rango">{{ textoRango() }}</span>
+  </div>
+
+  <div class="historial-filtros">
+    <mat-form-field appearance="outline" class="fecha" subscriptSizing="dynamic">
+      <mat-label>Desde</mat-label>
+      <input matInput type="date" [value]="desde()" [max]="hasta() < hoy ? hasta() : hoy" (change)="cambiarDesde($any($event.target).value)" />
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="fecha" subscriptSizing="dynamic">
+      <mat-label>Hasta</mat-label>
+      <input matInput type="date" [value]="hasta()" [min]="desde()" [max]="hoy" (change)="cambiarHasta($any($event.target).value)" />
+    </mat-form-field>
+    <button mat-button type="button" (click)="semanaActual()" [disabled]="esSemanaActual()">Esta semana</button>
+    <span class="espacio"></span>
+    <button
+      mat-stroked-button
+      type="button"
+      class="btn-excel"
+      (click)="exportarAltas()"
+      [disabled]="exportando() || altas().length === 0"
+      [matTooltip]="'Descargar en Excel las altas del rango (' + altas().length + ')'"
+    >
+      <svg class="icono-excel" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2" y="3" width="20" height="18" rx="3" fill="#1d6f42" />
+        <path d="M8 8l3 4-3 4h2.2l1.9-2.7L14 16h2.2l-3-4 3-4H14l-1.9 2.7L10.2 8z" fill="#fff" />
+      </svg>
+      {{ exportando() ? 'Generando…' : 'Excel' }}
+    </button>
+  </div>
+
+  @if (errorRango(); as m) {
+    <p class="error-rango" role="alert">{{ m }}</p>
+  }
+  @if (cargandoAltas()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <div class="tabla-contenedor">
+    <table mat-table [dataSource]="pagAltas.pagina()">
+      <ng-container matColumnDef="num">
+        <th mat-header-cell *matHeaderCellDef class="col-num">#</th>
+        <td mat-cell *matCellDef="let a; let i = index" class="col-num">{{ pagAltas.numero(i) }}</td>
+      </ng-container>
+      <ng-container matColumnDef="fecha">
+        <th mat-header-cell *matHeaderCellDef>Fecha de alta</th>
+        <td mat-cell *matCellDef="let a">{{ a.fechaAlta | date: 'dd/MM/yyyy HH:mm' }}</td>
+      </ng-container>
+      <ng-container matColumnDef="nombre">
+        <th mat-header-cell *matHeaderCellDef>Empleado</th>
+        <td mat-cell *matCellDef="let a">{{ a.nombreCompleto }}</td>
+      </ng-container>
+      <ng-container matColumnDef="usuario">
+        <th mat-header-cell *matHeaderCellDef>Usuario</th>
+        <td mat-cell *matCellDef="let a">{{ a.usuario || 'Pendiente' }}</td>
+      </ng-container>
+      <ng-container matColumnDef="puesto">
+        <th mat-header-cell *matHeaderCellDef>Puesto</th>
+        <td mat-cell *matCellDef="let a">{{ a.puesto }}</td>
+      </ng-container>
+      <ng-container matColumnDef="horario">
+        <th mat-header-cell *matHeaderCellDef>Horario</th>
+        <td mat-cell *matCellDef="let a">{{ horarioAlta(a) }}</td>
+      </ng-container>
+      <ng-container matColumnDef="registro">
+        <th mat-header-cell *matHeaderCellDef>Registró</th>
+        <td mat-cell *matCellDef="let a">{{ a.registradoPor }}</td>
+      </ng-container>
+      <ng-container matColumnDef="estatus">
+        <th mat-header-cell *matHeaderCellDef>Estatus</th>
+        <td mat-cell *matCellDef="let a">
+          <span class="chip" [class.ok]="a.activo" [class.no]="!a.activo">{{ a.activo ? 'Activo' : 'Inactivo' }}</span>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnasAltas"></tr>
+      <tr mat-row *matRowDef="let fila; columns: columnasAltas"></tr>
+    </table>
+
+    @if (pagAltas.total() > tamanos[0]) {
+      <mat-paginator
+        [length]="pagAltas.total()"
+        [pageIndex]="pagAltas.indice()"
+        [pageSize]="pagAltas.tamano()"
+        [pageSizeOptions]="tamanos"
+        (page)="pagAltas.cambiar($event)"
+        showFirstLastButtons
+      />
+    }
+    @if (!cargandoAltas() && altas().length === 0 && !errorRango()) {
+      <p class="vacio">No hay altas en este rango.</p>
+    }
+  </div>
+</section>

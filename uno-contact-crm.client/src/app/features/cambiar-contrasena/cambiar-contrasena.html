@@ -1,0 +1,88 @@
+<main class="contenedor">
+  <section class="acceso">
+    <img class="logo" src="brand/uno-logo-white.png" alt="UNO Contact Solutions Bureau" />
+
+    <mat-card class="tarjeta" appearance="outlined">
+      @if (enviando()) {
+        <mat-progress-bar mode="indeterminate" />
+      }
+      <mat-card-header>
+        <mat-card-title>Cambia tu contraseña</mat-card-title>
+        <mat-card-subtitle>{{ motivo() }}</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <form [formGroup]="formulario" (ngSubmit)="guardar()" autocomplete="off">
+          <mat-form-field appearance="outline" hideRequiredMarker>
+            <mat-label>Contraseña nueva</mat-label>
+            <input
+              matInput
+              formControlName="nueva"
+              [type]="verNueva() ? 'text' : 'password'"
+              autocomplete="new-password"
+              maxlength="30"
+            />
+            <mat-icon matPrefix>lock</mat-icon>
+            <button
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="verNueva.set(!verNueva())"
+              [attr.aria-label]="verNueva() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            >
+              <mat-icon>{{ verNueva() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" hideRequiredMarker>
+            <mat-label>Confirmar contraseña</mat-label>
+            <input
+              matInput
+              formControlName="confirmar"
+              [type]="verConfirmar() ? 'text' : 'password'"
+              autocomplete="new-password"
+              maxlength="30"
+            />
+            <mat-icon matPrefix>lock</mat-icon>
+            <button
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="verConfirmar.set(!verConfirmar())"
+              [attr.aria-label]="verConfirmar() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            >
+              <mat-icon>{{ verConfirmar() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            @if (formulario.hasError('noCoincide') && formulario.controls.confirmar.touched) {
+              <mat-error>Las contraseñas no coinciden.</mat-error>
+            }
+          </mat-form-field>
+
+          <ul class="requisitos">
+            @for (r of requisitos(); track r.texto) {
+              <li [class.ok]="r.ok">
+                <mat-icon>{{ r.ok ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                {{ r.texto }}
+              </li>
+            }
+          </ul>
+
+          <p class="nota">
+            <mat-icon>history</mat-icon>
+            No puede ser igual a tu contraseña actual ni a ninguna de las últimas {{ recordadas }}.
+          </p>
+
+          @if (error(); as mensaje) {
+            <p class="error" role="alert">{{ mensaje }}</p>
+          }
+
+          <button class="btn-entrar" mat-flat-button type="submit" [disabled]="enviando()">
+            Guardar contraseña
+          </button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <p class="pie">UNO Contact Solutions Bureau</p>
+  </section>
+</main>

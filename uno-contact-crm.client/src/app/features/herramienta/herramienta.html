@@ -1,0 +1,464 @@
+<section class="encabezado">
+  <h1>{{ titulo() }}</h1>
+  <p class="subtitulo">MenuStrip de BABEL GESTION · datos reales de BABEL_UNIFICADA</p>
+</section>
+
+@if (cargando()) {
+  <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+}
+
+@if (usaCuenta()) {
+  <mat-card class="tarjeta cuenta">
+    <h2><mat-icon>account_tree</mat-icon> Cuenta de la cartera activa</h2>
+    <div class="filtro">
+      <mat-form-field appearance="outline">
+        <mat-label>Buscar por cuenta, cliente o ID de control</mat-label>
+        <input matInput [(ngModel)]="filtro" (keyup.enter)="buscar()" />
+      </mat-form-field>
+      <button mat-flat-button color="primary" (click)="buscar()">
+        <mat-icon>search</mat-icon> Buscar
+      </button>
+    </div>
+
+    <div class="tabla">
+      <table>
+        <thead>
+          <tr>
+            <th>Cuenta</th>
+            <th>Cliente</th>
+            <th>ID control</th>
+            <th>Situación</th>
+            <th>Saldo</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of cuentas(); track c.idCuenta) {
+            <tr
+              [class.activo]="c.idCuenta === idCuenta()"
+              (click)="seleccionar(c)"
+              tabindex="0"
+              (keyup.enter)="seleccionar(c)"
+            >
+              <td>{{ c.numeroCuenta }}</td>
+              <td>{{ c.nombreCliente || '—' }}</td>
+              <td>{{ c.idControlLegacy }}</td>
+              <td>{{ c.situacionCuenta || '—' }}</td>
+              <td>{{ c.saldo ?? '—' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5">No hay cuentas para este filtro.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (cuenta(); as c) {
+      <p class="seleccionada">
+        <mat-icon>check_circle</mat-icon>
+        Seleccionada: <strong>{{ c.numeroCuenta }}</strong> · {{ c.nombreCliente || 'Sin nombre' }} ·
+        saldo {{ c.saldo ?? '—' }}
+      </p>
+    }
+  </mat-card>
+}
+
+@switch (modo()) {
+  @case ('buscar') {
+    <mat-card class="tarjeta">
+      <h2><mat-icon>search</mat-icon> Búsqueda de accounts</h2>
+      <p>
+        Esta pantalla replica <code>FRM_BUSCAR</code>: localiza la cuenta por número, cliente o
+        ID de control usando <code>ope.USP_CONSULTA_CUENTAS</code>, y después valida el control
+        con los datos migrados.
+      </p>
+      @if (idCuenta()) {
+        <button mat-flat-button color="primary" (click)="abrirSeleccionado()">
+          <mat-icon>open_in_new</mat-icon> Abrir en gestión
+        </button>
+      }
+    </mat-card>
+  }
+
+  @case ('notas') {
+    <div class="columnas">
+      <mat-card class="tarjeta">
+        <h2><mat-icon>note_add</mat-icon> Capturar nota</h2>
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo de seguimiento</mat-label>
+          <mat-select [(ngModel)]="nota.tipoSeguimiento">
+            <option value="INCUMPLIMIENTO">INCUMPLIMIENTO</option>
+            <option value="PAGOS">PAGOS</option>
+            <option value="LLAMADA">LLAMADA</option>
+            <option value="ACLARACION">ACLARACION</option>
+            <option value="SEGUIMIENTO">SEGUIMIENTO</option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Teléfono</mat-label>
+          <input matInput [(ngModel)]="nota.telefono" />
+        </mat-form-field>
+        <div class="dos">
+          <mat-form-field appearance="outline">
+            <mat-label>Pagos</mat-label>
+            <input matInput type="number" [(ngModel)]="nota.pagos" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Importe</mat-label>
+            <input matInput type="number" [(ngModel)]="nota.importe" />
+          </mat-form-field>
+        </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Nota</mat-label>
+          <textarea matInput rows="4" [(ngModel)]="nota.texto"></textarea>
+        </mat-form-field>
+        <button mat-flat-button color="primary" [disabled]="guardando()" (click)="guardarNota()">
+          <mat-icon>save</mat-icon> Guardar nota
+        </button>
+      </mat-card>
+
+      <mat-card class="tarjeta">
+        <h2><mat-icon>list_alt</mat-icon> Notas de la cuenta</h2>
+        <div class="tabla">
+          <table>
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Teléfono</th><th>Importe</th><th>Nota</th></tr></thead>
+            <tbody>
+              @for (n of notas(); track n.idNota) {
+                <tr>
+                  <td>{{ n.fechaSeguimiento }}</td>
+                  <td>{{ n.tipoSeguimiento }}</td>
+                  <td>{{ n.telefono || '—' }}</td>
+                  <td>{{ n.importe ?? '—' }}</td>
+                  <td>{{ n.texto || '—' }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5">Sin notas capturadas.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </mat-card>
+    </div>
+  }
+
+  @case ('bloc-notas') {
+    <mat-card class="tarjeta">
+      <h2><mat-icon>description</mat-icon> Bloc de notas del ejecutivo</h2>
+      <p>Equivale a <code>CONSULTA_NEBN_BLOC_NOTAS</code> / <code>ACTUALIZA_NEBN_BLOC_NOTAS</code>.</p>
+      <mat-form-field appearance="outline" class="ancha">
+        <mat-label>Texto del bloc</mat-label>
+        <textarea matInput rows="12" [(ngModel)]="bloc" (blur)="guardarBloc()"></textarea>
+      </mat-form-field>
+      <button mat-flat-button color="primary" [disabled]="guardando()" (click)="guardarBloc()">
+        <mat-icon>save</mat-icon> Guardar
+      </button>
+    </mat-card>
+  }
+
+  @case ('calculadora') {
+    <div class="columnas">
+      <mat-card class="tarjeta">
+        <h2><mat-icon>calculate</mat-icon> Simulador de negociación</h2>
+        <p><code>Calculadora</code> abre <code>FRM_NEGOCIACIONES</code> en el legacy.</p>
+        <mat-form-field appearance="outline">
+          <mat-label>Monto original</mat-label>
+          <input matInput type="number" [(ngModel)]="negociacion.montoOriginal" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Porcentaje de descuento</mat-label>
+          <input matInput type="number" [(ngModel)]="negociacion.porcentajeDescuento" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Número de pagos</mat-label>
+          <input matInput type="number" [(ngModel)]="negociacion.numeroPagos" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Fecha del primer pago</mat-label>
+          <input matInput type="date" [(ngModel)]="negociacion.fechaPrimerPago" />
+        </mat-form-field>
+        <button mat-flat-button color="primary" (click)="calcular()">
+          <mat-icon>sum_calculate</mat-icon> Calcular
+        </button>
+        @if (calculo(); as c) {
+          <div class="resultado">
+            <p>Monto con descuento: <strong>{{ c.montoFinal }}</strong></p>
+            <p>Abono por pago: <strong>{{ c.abono }}</strong></p>
+            <p>Total del plan: <strong>{{ c.total }}</strong></p>
+          </div>
+          <button mat-flat-button color="accent" [disabled]="guardando()" (click)="guardarNegociacion()">
+            <mat-icon>save</mat-icon> Guardar negociación
+          </button>
+        }
+      </mat-card>
+
+      <mat-card class="tarjeta">
+        <h2><mat-icon>history</mat-icon> Negociaciones guardadas</h2>
+        <div class="tabla">
+          <table>
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Descuento</th><th>Final</th><th>Pagos</th></tr></thead>
+            <tbody>
+              @for (n of negociaciones(); track n.idNegociacion) {
+                <tr>
+                  <td>{{ n.fechaRegistro }}</td>
+                  <td>{{ n.tipoNegociacion || '—' }}</td>
+                  <td>{{ n.porcentajeDescuento }}%</td>
+                  <td>{{ n.montoFinal }}</td>
+                  <td>{{ n.numeroPagos }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5">Sin negociaciones guardadas.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </mat-card>
+    </div>
+  }
+
+  @case ('actualiza-informacion') {
+    <div class="columnas">
+      <mat-card class="tarjeta">
+        <h2><mat-icon>edit_location</mat-icon> Datos de contacto y domicilio</h2>
+        <mat-form-field appearance="outline"><mat-label>Calle</mat-label><input matInput [(ngModel)]="demografico.calle" /></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Colonia</mat-label><input matInput [(ngModel)]="demografico.colonia" /></mat-form-field>
+        <div class="dos">
+          <mat-form-field appearance="outline"><mat-label>C.P.</mat-label><input matInput [(ngModel)]="demografico.codigoPostal" /></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Delegación</mat-label><input matInput [(ngModel)]="demografico.delegacion" /></mat-form-field>
+        </div>
+        <mat-form-field appearance="outline"><mat-label>Estado</mat-label><input matInput [(ngModel)]="demografico.estado" /></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Teléfono</mat-label><input matInput [(ngModel)]="demografico.telefono" /></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Correo electrónico</mat-label><input matInput [(ngModel)]="demografico.email" /></mat-form-field>
+        <button mat-flat-button color="primary" [disabled]="guardando()" (click)="guardarDemografico()">
+          <mat-icon>save</mat-icon> Actualizar información
+        </button>
+      </mat-card>
+
+      <mat-card class="tarjeta">
+        <h2><mat-icon>phone_add</mat-icon> Agregar teléfono</h2>
+        <mat-form-field appearance="outline"><mat-label>Teléfono a 10 dígitos</mat-label><input matInput [(ngModel)]="nuevoTelefono.numero" maxlength="10" /></mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo</mat-label>
+          <mat-select [(ngModel)]="nuevoTelefono.tipo">
+            <option value="CELULAR">CELULAR</option>
+            <option value="CASA">CASA</option>
+            <option value="TRABAJO">TRABAJO</option>
+          </mat-select>
+        </mat-form-field>
+        <button mat-flat-button color="accent" [disabled]="guardando()" (click)="registrarTelefono()">
+          <mat-icon>add</mat-icon> Agregar teléfono
+        </button>
+        <div class="tabla">
+          <table>
+            <thead><tr><th>Teléfono</th><th>Tipo</th><th>Origen</th></tr></thead>
+            <tbody>
+              @for (t of telefonos(); track t.idTelefono) {
+                <tr><td>{{ t.numero }}</td><td>{{ t.tipo || '—' }}</td><td>{{ t.origen || '—' }}</td></tr>
+              } @empty { <tr><td colspan="3">Sin teléfonos.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+      </mat-card>
+    </div>
+  }
+
+  @case ('expedientes') {
+    <mat-card class="tarjeta">
+      <h2><mat-icon>folder_open</mat-icon> Expediente consolidado</h2>
+      <p>
+        El legacy abre documentos PDF desde una unidad de red. Aquí se presenta el expediente
+        con los datos migrados de la cuenta, teléfonos, gestiones, promesas y demográficos.
+      </p>
+    </mat-card>
+    <div class="columnas">
+      <mat-card class="tarjeta">
+        <h3><mat-icon>contacts</mat-icon> Cuenta</h3>
+        @if (cuenta(); as c) {
+          <dl>
+            <dt>Número</dt><dd>{{ c.numeroCuenta }}</dd>
+            <dt>Cliente</dt><dd>{{ c.nombreCliente || '—' }}</dd>
+            <dt>Situación</dt><dd>{{ c.situacionCuenta || '—' }}</dd>
+            <dt>Saldo</dt><dd>{{ c.saldo ?? '—' }}</dd>
+          </dl>
+        }
+      </mat-card>
+      <mat-card class="tarjeta">
+        <h3><mat-icon>history</mat-icon> Últimas gestiones</h3>
+        <div class="tabla">
+          <table>
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Teléfono</th><th>Comentario</th></tr></thead>
+            <tbody>
+              @for (g of gestiones(); track g.idGestion) {
+                <tr><td>{{ g.fechaInicio }}</td><td>{{ g.tipoGestion }}</td><td>{{ g.telefonoMarcado || '—' }}</td><td>{{ g.comentario || '—' }}</td></tr>
+              } @empty { <tr><td colspan="4">Sin gestiones.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+      </mat-card>
+      <mat-card class="tarjeta">
+        <h3><mat-icon>phone</mat-icon> Teléfonos</h3>
+        <div class="tabla">
+          <table>
+            <thead><tr><th>Número</th><th>Tipo</th><th>Origen</th></tr></thead>
+            <tbody>
+              @for (t of telefonos(); track t.idTelefono) {
+                <tr><td>{{ t.numero }}</td><td>{{ t.tipo || '—' }}</td><td>{{ t.origen || '—' }}</td></tr>
+              } @empty { <tr><td colspan="3">Sin teléfonos.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+      </mat-card>
+      <mat-card class="tarjeta">
+        <h3><mat-icon>receipt_long</mat-icon> Promesas</h3>
+        <div class="tabla">
+          <table>
+            <thead><tr><th>Fecha</th><th>Monto</th><th>Lugar</th><th>Estatus</th></tr></thead>
+            <tbody>
+              @for (p of promesas(); track p.idPromesa) {
+                <tr><td>{{ p.fechaPromesa }}</td><td>{{ p.monto }}</td><td>{{ p.lugarPago || '—' }}</td><td>{{ p.estatus }}</td></tr>
+              } @empty { <tr><td colspan="4">Sin promesas.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+      </mat-card>
+    </div>
+  }
+
+  @case ('softphone') {
+    <div class="columnas">
+      <mat-card class="tarjeta">
+        <h2><mat-icon>phone</mat-icon> Marcación</h2>
+        <mat-form-field appearance="outline" class="ancha">
+          <mat-label>Número a marcar</mat-label>
+          <input matInput [(ngModel)]="softphoneNumero" />
+        </mat-form-field>
+        <div class="teclado">
+          @for (d of ['1','2','3','4','5','6','7','8','9','*','0','#']; track d) {
+            <button mat-stroked-button (click)="tecla(d)">{{ d }}</button>
+          }
+        </div>
+        <div class="acciones">
+          <button mat-flat-button color="primary" [disabled]="guardando()" (click)="marcar()">
+            <mat-icon>call</mat-icon> Marcar
+          </button>
+          <button mat-stroked-button (click)="remarcar()"><mat-icon>redo</mat-icon> Remarcar</button>
+          <button mat-stroked-button (click)="colgar()" [disabled]="!enLlamada">
+            <mat-icon>call_end</mat-icon> Colgar
+          </button>
+        </div>
+        @if (enLlamada) { <p class="llamada"><mat-icon>phone_in_talk</mat-icon> Llamada en curso: {{ ultimoNumero() }}</p> }
+      </mat-card>
+
+      <mat-card class="tarjeta">
+        <h3><mat-icon>dialpad</mat-icon> Teléfonos de la cuenta</h3>
+        <div class="tabla">
+          <table>
+            <thead><tr><th>Número</th><th>Tipo</th><th></th></tr></thead>
+            <tbody>
+              @for (t of telefonos(); track t.idTelefono) {
+                <tr>
+                  <td>{{ t.numero }}</td><td>{{ t.tipo || '—' }}</td>
+                  <td><button mat-button color="primary" (click)="softphoneNumero = t.numero">Usar</button></td>
+                </tr>
+              } @empty { <tr><td colspan="3">Sin teléfonos.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+      </mat-card>
+    </div>
+  }
+
+  @case ('bloquear') {
+    <mat-card class="tarjeta">
+      <h2><mat-icon>coffee</mat-icon> Control de recesos</h2>
+      <p>
+        En el legacy <code>Bloquear</code> no bloquea la cuenta: abre <code>FRM_BLOQUEAR</code>
+        para registrar un break (<code>INSERTA_HIRE_RECESO</code> / <code>ACTUALIZA_NEPG_RECESOS</code>).
+      </p>
+      <mat-form-field appearance="outline">
+        <mat-label>Tipo de receso</mat-label>
+        <mat-select [(ngModel)]="tipoSReceso">
+          <option value="Receso">Receso</option>
+          <option value="Comida">Comida</option>
+          <option value="Pausa médica">Pausa médica</option>
+        </mat-select>
+      </mat-form-field>
+      <div class="acciones">
+        <button mat-flat-button color="primary" [disabled]="guardando() || recesoActivo()" (click)="iniciarReceso()">
+          <mat-icon>play_arrow</mat-icon> Iniciar receso
+        </button>
+        <button mat-flat-button color="accent" [disabled]="guardando() || !recesoActivo()" (click)="finalizarReceso()">
+          <mat-icon>stop</mat-icon> Activar / finalizar
+        </button>
+        <button mat-stroked-button (click)="actualizarMinutos()"><mat-icon>refresh</mat-icon> Actualizar tiempo</button>
+      </div>
+      @if (recesoActivo(); as r) {
+        <p class="receso"><mat-icon>timer</mat-icon> Receso activo desde {{ r.inicio }} · {{ minutosReceso() }} min</p>
+      }
+    </mat-card>
+    <mat-card class="tarjeta">
+      <h3><mat-icon>history</mat-icon> Últimos recesos</h3>
+      <div class="tabla">
+        <table>
+          <thead><tr><th>Inicio</th><th>Fin</th><th>Tipo</th><th>Minutos</th></tr></thead>
+          <tbody>
+            @for (r of recesos(); track r.idReceso) {
+              <tr><td>{{ r.inicio }}</td><td>{{ r.fin || '—' }}</td><td>{{ r.tipoReceso || '—' }}</td><td>{{ r.minutos ?? '—' }}</td></tr>
+            } @empty { <tr><td colspan="4">Sin recesos registrados.</td></tr> }
+          </tbody>
+        </table>
+      </div>
+    </mat-card>
+  }
+
+  @case ('cancelar') {
+    <mat-card class="tarjeta">
+      <h2><mat-icon>cancel</mat-icon> Cancelar gestión en curso</h2>
+      <p>
+        El handler legacy limpia campos, grids y temporizadores, valida el control y pasa a la
+        siguiente cuenta. Selecciona la cuenta actual y confirma para abrir la siguiente.
+      </p>
+      @if (idCuenta()) {
+        <p>Cuenta actual: <strong>{{ cuenta()?.numeroCuenta }}</strong></p>
+      }
+      <button mat-flat-button color="warn" (click)="cancelarYSiguiente()">
+        <mat-icon>skip_next</mat-icon> Cancelar y pasar a la siguiente
+      </button>
+    </mat-card>
+  }
+
+  @case ('agendar-llamada') {
+    <div class="columnas">
+      <mat-card class="tarjeta">
+        <h2><mat-icon>event</mat-icon> Agendar llamada</h2>
+        <p>El submenú era inactivo en el legacy; se habilita aquí con <code>ope.AgendaLlamada</code>.</p>
+        <mat-form-field appearance="outline">
+          <mat-label>Fecha y hora</mat-label>
+          <input matInput type="datetime-local" [(ngModel)]="agendaForm.fechaHora" />
+        </mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Teléfono</mat-label><input matInput [(ngModel)]="agendaForm.telefono" /></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Asunto</mat-label><input matInput [(ngModel)]="agendaForm.asunto" /></mat-form-field>
+        <button mat-flat-button color="primary" [disabled]="guardando()" (click)="guardarAgenda()">
+          <mat-icon>save</mat-icon> Agendar
+        </button>
+      </mat-card>
+      <mat-card class="tarjeta">
+        <h3><mat-icon>calendar_month</mat-icon> Llamadas agendadas</h3>
+        <div class="tabla">
+          <table>
+            <thead><tr><th>Fecha</th><th>Cuenta</th><th>Asunto</th><th>Estatus</th><th></th></tr></thead>
+            <tbody>
+              @for (a of agenda(); track a.idAgenda) {
+                <tr>
+                  <td>{{ a.fechaHora }}</td><td>{{ a.numeroCuenta }}</td><td>{{ a.asunto || '—' }}</td><td>{{ a.estatus }}</td>
+                  <td>
+                    <button mat-button color="primary" (click)="cambiarEstatus(a, 'REALIZADA')">Realizada</button>
+                    <button mat-button color="warn" (click)="cambiarEstatus(a, 'CANCELADA')">Cancelar</button>
+                  </td>
+                </tr>
+              } @empty { <tr><td colspan="5">Sin llamadas agendadas.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+      </mat-card>
+    </div>
+  }
+}
