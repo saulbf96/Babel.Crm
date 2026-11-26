@@ -22,6 +22,7 @@
     "@angular/material": "^22.3.0",
     "@angular/platform-browser": "^22.3.0",
     "@angular/router": "^22.3.0",
+    "exceljs": "^4.4.0",
     "jest-editor-support": "*",
     "run-script-os": "*",
     "rxjs": "~7.8.0",

@@ -4,6 +4,9 @@
 --  a la cartera del admin. NO se borra físicamente (se conserva historial).
 -- =====================================================================
 USE BABEL_UNIFICADA;
+-- Obligatorio: rh.Empleado y otras tablas tienen índices filtrados (error 1934 si se crean los SP con OFF).
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
 GO
 
 -- Activa o desactiva (baja lógica) al usuario. @Activo = 0 => baja; 1 => reactiva.

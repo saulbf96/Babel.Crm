@@ -4,6 +4,9 @@
 --  DebeCambiarContrasena para que el login deje de exigir el cambio.
 -- =====================================================================
 USE BABEL_UNIFICADA;
+-- Obligatorio: rh.Empleado y otras tablas tienen índices filtrados (error 1934 si se crean los SP con OFF).
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
 GO
 
 CREATE OR ALTER PROCEDURE seg.USP_CAMBIAR_CONTRASENA

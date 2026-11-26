@@ -1,3 +1,4 @@
+using UnoContact.Crm.Server.Infraestructura;
 using UnoContact.Crm.Application.Carteras;
 using UnoContact.Crm.Application.Catalogos;
 using Microsoft.AspNetCore.Authorization;
@@ -18,7 +19,7 @@ public sealed record RestaurarPersonalRequest(IReadOnlyList<int>? IdsEmpleados);
 /// </summary>
 [ApiController]
 [Route("api/carteras")]
-[Authorize(Policy = "Administrador")]
+[Authorize]
 public sealed class CarterasController(IServicioCarteras servicio) : ControllerBase
 {
     [HttpGet]
@@ -29,6 +30,7 @@ public sealed class CarterasController(IServicioCarteras servicio) : ControllerB
     }
 
     [HttpGet("{idCartera}/personal")]
+    [Permiso("asignar-personal")]
     public async Task<ActionResult<IReadOnlyList<PersonalCartera>>> Personal(
         byte idCartera,
         [FromQuery] string? texto,
@@ -39,6 +41,7 @@ public sealed class CarterasController(IServicioCarteras servicio) : ControllerB
     }
 
     [HttpPost("{idCartera}/asignar")]
+    [Permiso("asignar-personal")]
     public async Task<ActionResult<ResultadoAsignacion>> Asignar(
         byte idCartera,
         AsignarPersonalRequest solicitud,
@@ -54,7 +57,10 @@ public sealed class CarterasController(IServicioCarteras servicio) : ControllerB
         return Ok(resultado);
     }
 
+
+
     [HttpPost("restaurar")]
+    [Permiso("asignar-personal")]
     public async Task<ActionResult<ResultadoRestauracion>> Restaurar(
         RestaurarPersonalRequest solicitud,
         CancellationToken cancelacion)
@@ -64,6 +70,7 @@ public sealed class CarterasController(IServicioCarteras servicio) : ControllerB
     }
 
     [HttpGet("operativo")]
+    [Permiso("asignar-personal")]
     public async Task<ActionResult<IReadOnlyList<OperativoResumen>>> Operativo(
         [FromQuery] int? idEmpleado,
         [FromQuery] byte? idCartera,

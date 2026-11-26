@@ -100,7 +100,8 @@ public sealed class AdministracionApiTests : IClassFixture<AdministracionApiTest
         {
             idPuesto = 1,
             idSexo = 1,
-            idTurno = 1,
+            horaEntrada = "09:00:00",
+            horaSalida = "18:00:00",
             nombre = "PRUEBA",
             paterno = "FLUJO",
         });

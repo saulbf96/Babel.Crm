@@ -1,5 +1,7 @@
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { Component, inject } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { InactividadService, MINUTOS_INACTIVIDAD } from '../core/sesion/inactividad';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -19,6 +21,7 @@ import { SesionService } from '../core/sesion/sesion.service';
     MatListModule,
     MatSidenavModule,
     MatToolbarModule,
+    MatTooltipModule,
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
@@ -30,12 +33,21 @@ export class Shell {
   protected readonly sesion = inject(SesionService);
   private readonly router = inject(Router);
 
+  /** Reloj de inactividad: corre de 30:00 hacia abajo y se reinicia con cualquier actividad. */
+  protected readonly inactividad = inject(InactividadService);
+  protected readonly minutosInactividad = MINUTOS_INACTIVIDAD;
+
+  constructor() {
+    this.inactividad.iniciar(inject(DestroyRef));
+  }
+
   protected readonly esMovil = toSignal(
     inject(BreakpointObserver).observe(Breakpoints.Handset).pipe(map((r) => r.matches)),
     { initialValue: false },
   );
 
   protected async salir(): Promise<void> {
+    this.inactividad.detener();
     await this.sesion.cerrarSesion();
     await this.router.navigateByUrl('/acceso');
   }

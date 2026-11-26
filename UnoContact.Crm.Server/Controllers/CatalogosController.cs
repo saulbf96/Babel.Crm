@@ -7,7 +7,7 @@ namespace UnoContact.Crm.Server.Controllers;
 /// <summary>Catálogos para los combos de las pantallas de Administración.</summary>
 [ApiController]
 [Route("api/catalogos")]
-[Authorize(Policy = "Administrador")]
+[Authorize] // catálogos (puestos, sexos, carteras…): cualquier usuario con sesión
 public sealed class CatalogosController(IServicioCatalogos servicio) : ControllerBase
 {
     [HttpGet]

@@ -26,5 +26,11 @@ public interface IUsuarioActual
 
     IReadOnlyCollection<Perfil> Perfiles { get; }
 
+    /// <summary>Opciones de menú que puede usar (claves de CatalogoMenu).</summary>
+    IReadOnlyCollection<string> Permisos => [];
+
+    /// <summary>ROOT: tiene todo y puede cambiarse sus propios permisos.</summary>
+    bool EsRoot => false;
+
     bool TienePerfil(Perfil perfil) => Perfiles.Contains(perfil);
 }

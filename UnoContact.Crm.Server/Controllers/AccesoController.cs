@@ -55,6 +55,8 @@ public sealed class AccesoController(
             new(ClaimsBabel.MotivoCambioContrasena, resultado.MotivoCambio.ToString()),
         };
         claims.AddRange(resultado.Perfiles!.Select(p => new Claim(ClaimsBabel.Perfil, p.ToString())));
+        claims.AddRange((resultado.Permisos ?? []).Select(p => new Claim(ClaimsBabel.Permiso, p)));
+        claims.Add(new Claim(ClaimsBabel.Root, usuario.EsRoot ? "1" : "0"));
 
         var identidad = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identidad));

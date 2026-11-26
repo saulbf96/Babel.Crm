@@ -26,8 +26,17 @@
       <button mat-icon-button (click)="menu.toggle()" aria-label="Mostrar u ocultar menú">
         <mat-icon>menu</mat-icon>
       </button>
-      <span class="titulo">UNO Contact CRM</span>
+      <span class="titulo">UNO Contact</span>
       <span class="espacio"></span>
+      <span
+        class="reloj"
+        [class.aviso]="inactividad.nivel() === 'aviso'"
+        [class.critico]="inactividad.nivel() === 'critico'"
+        role="timer"
+        [matTooltip]="'La sesión se cierra tras ' + minutosInactividad + ' minutos sin actividad. Cualquier movimiento reinicia el reloj.'"
+      >
+        <mat-icon>timer</mat-icon>{{ inactividad.reloj() }}
+      </span>
       <span class="usuario">{{ sesion.usuario() }} · {{ sesion.cartera() }}</span>
       <button mat-icon-button (click)="salir()" aria-label="Cerrar sesión" title="Cerrar sesión">
         <mat-icon>logout</mat-icon>

@@ -13,10 +13,79 @@ public sealed class ServicioAccesoTests
     private readonly RepositorioFalso _repositorio = new();
     private readonly IntentosFalsos _intentos = new();
 
+    private readonly RelojFijo _reloj = new(new TimeOnly(10, 0));
+
     private ServicioAcceso CrearServicio() => new(
         _repositorio,
         _intentos,
-        Options.Create(new MapeoPerfiles { Asesor = [14], Supervisor = [17], Administrador = [1] }));
+        Options.Create(new MapeoPerfiles { Asesor = [14], Supervisor = [17], Administrador = [1] }),
+        _reloj);
+
+    // ---------- Horario de acceso (08:00 a 14:30, 10 min de tolerancia) ----------
+    private static readonly UsuarioCrm ConHorario = UsuarioPrueba with
+    {
+        AplicaHorario = true, HoraEntrada = new TimeOnly(8, 0), HoraSalida = new TimeOnly(14, 30),
+    };
+
+    [Theory]
+    [InlineData(7, 49, false)]  // antes de la tolerancia
+    [InlineData(7, 50, true)]   // 10 min antes: ya puede
+    [InlineData(11, 0, true)]
+    [InlineData(14, 30, true)]  // justo a la salida
+    [InlineData(15, 0, false)]  // después de su horario
+    public async Task Login_respeta_el_horario_con_tolerancia(int hora, int minuto, bool entra)
+    {
+        _repositorio.Usuario = ConHorario;
+        _reloj.Hora = new TimeOnly(hora, minuto);
+
+        var resultado = await CrearServicio().IniciarSesionAsync(Solicitud());
+
+        Assert.Equal(entra, resultado.Exitoso);
+        if (!entra) Assert.Contains("fuera de tu horario", resultado.Mensaje);
+    }
+
+    [Fact]
+    public async Task Fuera_de_horario_no_cuenta_como_intento_fallido()
+    {
+        _repositorio.Usuario = ConHorario;
+        _reloj.Hora = new TimeOnly(20, 0);
+        var servicio = CrearServicio();
+
+        for (var i = 0; i < 5; i++) await servicio.IniciarSesionAsync(Solicitud());
+
+        Assert.False(_repositorio.Bloqueado); // la contraseña era correcta: no se bloquea
+    }
+
+    [Fact]
+    public async Task No_aplica_horario_entra_a_cualquier_hora()
+    {
+        _repositorio.Usuario = ConHorario with { AplicaHorario = false };
+        _reloj.Hora = new TimeOnly(23, 0);
+
+        Assert.True((await CrearServicio().IniciarSesionAsync(Solicitud())).Exitoso);
+    }
+
+    [Theory]
+    [InlineData(21, 50, true)]  // nocturno 22:00-06:00: tolerancia antes de medianoche
+    [InlineData(3, 0, true)]
+    [InlineData(6, 0, true)]
+    [InlineData(6, 1, false)]
+    [InlineData(12, 0, false)]
+    public void Horario_nocturno_cruza_la_medianoche(int hora, int minuto, bool entra)
+    {
+        Assert.Equal(entra, PoliticaHorario.PuedeEntrar(new TimeOnly(hora, minuto), new TimeOnly(22, 0), new TimeOnly(6, 0)));
+    }
+
+    /// <summary>Reloj de pruebas: la hora local es la que se fija.</summary>
+    private sealed class RelojFijo(TimeOnly hora) : TimeProvider
+    {
+        public TimeOnly Hora { get; set; } = hora;
+
+        public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
+
+        public override DateTimeOffset GetUtcNow() =>
+            new(new DateOnly(2026, 11, 26).ToDateTime(Hora), TimeSpan.Zero);
+    }
 
     private static SolicitudAcceso Solicitud(string usuario = "prueba", string contrasena = "secreta") =>
         new(usuario, contrasena, "10.0.0.1", "CRM-WEB");
@@ -128,6 +197,11 @@ public sealed class ServicioAccesoTests
 
         public Task<ReusoContrasena> RevisarReusoAsync(int idUsuario, string contrasena, int recordadas, CancellationToken cancelacion) =>
             Task.FromResult(ReusoContrasena.Ninguno);
+
+        public List<AjustePermiso> Ajustes { get; } = [];
+
+        public Task<IReadOnlyList<AjustePermiso>> PermisosAsync(int idUsuario, CancellationToken cancelacion) =>
+            Task.FromResult<IReadOnlyList<AjustePermiso>>(Ajustes);
 
         public Task BloquearAsync(string usuario, string ip, string equipo, byte intentos, CancellationToken cancelacion)
         {

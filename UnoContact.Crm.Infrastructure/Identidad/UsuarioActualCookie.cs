@@ -17,6 +17,9 @@ public static class ClaimsBabel
     public const string DebeCambiarContrasena = "babel:debe_cambiar";
     public const string MotivoCambioContrasena = "babel:motivo_cambio";
     public const string Perfil = ClaimTypes.Role;
+    /// <summary>Una claim por opción de menú permitida (clave de CatalogoMenu).</summary>
+    public const string Permiso = "uc:permiso";
+    public const string Root = "uc:root";
 }
 
 /// <summary>Usuario actual leído de la cookie de sesión del CRM.</summary>
@@ -45,6 +48,11 @@ public sealed class UsuarioActualCookie(IHttpContextAccessor accesoHttp) : IUsua
 
     public string? MotivoCambioContrasena =>
         DebeCambiarContrasena ? Principal?.FindFirstValue(ClaimsBabel.MotivoCambioContrasena) : null;
+
+    public IReadOnlyCollection<string> Permisos =>
+        EstaAutenticado ? Principal!.FindAll(ClaimsBabel.Permiso).Select(c => c.Value).Distinct().ToList() : [];
+
+    public bool EsRoot => Principal?.FindFirstValue(ClaimsBabel.Root) == "1";
 
     public IReadOnlyCollection<Perfil> Perfiles =>
         EstaAutenticado

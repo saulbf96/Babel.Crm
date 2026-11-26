@@ -9,6 +9,9 @@
   (DebeCambiarContrasena = 0 para pruebas; se puede activar despues).
 */
 USE BABEL_UNIFICADA;
+-- Obligatorio: rh.Empleado y otras tablas tienen índices filtrados (error 1934 si se crean los SP con OFF).
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
 GO
 
 IF OBJECT_ID('log.AccesoBloqueo') IS NULL
@@ -42,6 +45,11 @@ CREATE TABLE seg.Usuario (
 );
 GO
 
+-- ROOT (26/11/2026): el primer usuario tiene todos los permisos (ver 23_seg_permisos.sql).
+IF COL_LENGTH('seg.Usuario', 'EsRoot') IS NULL
+    ALTER TABLE seg.Usuario ADD EsRoot bit NOT NULL CONSTRAINT DF_Usuario_EsRoot DEFAULT (0);
+GO
+
 -- =====================================================================
 --  Login: valida el hash en el backend y devuelve la cartera inicial.
 --  La cartera inicial es la primera asignacion activa del empleado; si el
@@ -62,9 +70,15 @@ BEGIN
         u.IdDepartamento,
         u.Activo,
         u.Bloqueado,
+        u.EsRoot,
         ISNULL(ca.IdCartera, 0) AS IdCartera,
-        ISNULL(ca.Nombre, '') AS Cartera
+        ISNULL(ca.Nombre, '') AS Cartera,
+        -- Horario de acceso (script 03). Sin empleado (ADMIN de arranque) => no aplica.
+        CAST(ISNULL(emp.AplicaHorario, 0) AS bit) AS AplicaHorario,
+        emp.HoraEntrada,
+        emp.HoraSalida
     FROM seg.Usuario u
+    LEFT JOIN rh.Empleado emp ON emp.IdEmpleado = u.IdEmpleado
     OUTER APPLY (
         SELECT TOP 1 x.IdCartera
         FROM rh.EmpleadoCartera x

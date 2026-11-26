@@ -18,7 +18,10 @@ public sealed class RepositorioUsuariosCrm(
 
     private sealed record RenglonUsuario(
         int IdUsuario, string Usuario, string Hash, int IdEmpleado, short IdCartera, string Cartera,
-        short IdPuesto, short IdDepartamento, bool Activo, bool Bloqueado);
+        short IdPuesto, short IdDepartamento, bool Activo, bool Bloqueado,
+        bool AplicaHorario, TimeOnly? HoraEntrada, TimeOnly? HoraSalida, bool EsRoot);
+
+    private static TimeOnly? Hora(object valor) => valor is DBNull ? null : TimeOnly.FromTimeSpan((TimeSpan)valor);
 
     public async Task<UsuarioCrm?> ValidarAsync(string usuario, string contrasena, CancellationToken cancelacion)
     {
@@ -35,7 +38,11 @@ public sealed class RepositorioUsuariosCrm(
                 Convert.ToInt16(r["IdPuesto"]),
                 Convert.ToInt16(r["IdDepartamento"]),
                 Convert.ToBoolean(r["Activo"]),
-                Convert.ToBoolean(r["Bloqueado"])),
+                Convert.ToBoolean(r["Bloqueado"]),
+                Convert.ToBoolean(r["AplicaHorario"]),
+                Hora(r["HoraEntrada"]),
+                Hora(r["HoraSalida"]),
+                Convert.ToBoolean(r["EsRoot"])),
             cancelacion);
 
         if (renglones.Count != 1) return null;
@@ -53,7 +60,11 @@ public sealed class RepositorioUsuariosCrm(
             Bloqueado: u.Bloqueado,
             Activo: u.Activo,
             IdCartera: u.IdCartera,
-            Cartera: u.Cartera);
+            Cartera: u.Cartera,
+            AplicaHorario: u.AplicaHorario,
+            HoraEntrada: u.HoraEntrada,
+            HoraSalida: u.HoraSalida,
+            EsRoot: u.EsRoot);
     }
 
     public async Task<MotivoCambioContrasena> EstadoContrasenaAsync(int idUsuario, int diasVigencia, CancellationToken cancelacion)
@@ -95,6 +106,13 @@ public sealed class RepositorioUsuariosCrm(
 
         return ReusoContrasena.Ninguno;
     }
+
+    public Task<IReadOnlyList<AjustePermiso>> PermisosAsync(int idUsuario, CancellationToken cancelacion) =>
+        procedimientos.ConsultarAsync(
+            $"{BaseDatos}.seg.USP_CONSULTA_PERMISOS",
+            [new ParametroSp("@IdUsuario", idUsuario, DbType.Int32)],
+            r => new AjustePermiso(Convert.ToString(r["Clave"]) ?? string.Empty, Convert.ToBoolean(r["Concedido"])),
+            cancelacion);
 
     public Task BloquearAsync(string usuario, string ip, string equipo, byte intentos, CancellationToken cancelacion) =>
         procedimientos.EjecutarAsync(

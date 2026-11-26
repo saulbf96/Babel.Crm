@@ -1,3 +1,5 @@
+using UnoContact.Crm.Infrastructure.Identidad;
+using UnoContact.Crm.Application.Sesion;
 using System.Threading.RateLimiting;
 using UnoContact.Crm.Application;
 using UnoContact.Crm.Domain.Seguridad;
@@ -39,9 +41,19 @@ builder.Services.AddAuthorization(opciones =>
         opciones.AddPolicy(perfil.ToString(), p => p.RequireRole(perfil.ToString()));
     }
 
-    // Gestión la pueden usar asesores, supervisores y administradores (pruebas manuales).
-    opciones.AddPolicy("Gestion", p => p.RequireRole(
-        Perfil.Asesor.ToString(), Perfil.Supervisor.ToString(), Perfil.Administrador.ToString()));
+    // Una política por opción de menú: [Permiso("bajas")] = "permiso:bajas" (ReglasPermisos).
+    foreach (var opcion in CatalogoMenu.Opciones)
+    {
+        opciones.AddPolicy($"permiso:{opcion.Clave}", p => p.RequireClaim(ClaimsBabel.Permiso, opcion.Clave));
+    }
+
+    // Gestión y Herramientas: basta con tener alguna de sus opciones.
+    var clavesGestion = CatalogoMenu.Opciones
+        .Where(o => o.Grupo is "Gestión" or "Herramientas")
+        .Select(o => o.Clave)
+        .ToHashSet();
+    opciones.AddPolicy("Gestion", p => p.RequireAssertion(c =>
+        c.User.FindAll(ClaimsBabel.Permiso).Any(x => clavesGestion.Contains(x.Value))));
 });
 
 // Máximo 10 intentos de inicio de sesión por minuto por IP.

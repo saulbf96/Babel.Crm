@@ -1,8 +1,12 @@
+using UnoContact.Crm.Server.Infraestructura;
 using UnoContact.Crm.Application.Usuarios;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace UnoContact.Crm.Server.Controllers;
+
+/// <summary>Contraseña temporal recién generada (no se guarda en claro en ningún lado).</summary>
+public sealed record CredencialesTemporales(string ContrasenaTemporal);
 
 /// <summary>
 /// Administración de usuarios para el Administrador: ver, desbloquear y forzar cambio
@@ -10,7 +14,7 @@ namespace UnoContact.Crm.Server.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/usuarios")]
-[Authorize(Policy = "Administrador")]
+[Permiso("usuarios")]
 public sealed class UsuariosController(IServicioUsuarios servicio) : ControllerBase
 {
     [HttpGet]
@@ -61,6 +65,16 @@ public sealed class UsuariosController(IServicioUsuarios servicio) : ControllerB
         return actuo
             ? NoContent()
             : Problem(statusCode: StatusCodes.Status403Forbidden, title: "El usuario no pertenece a tu campaña.");
+    }
+
+    /// <summary>Contraseña temporal ÚNICA (se muestra una sola vez); desbloquea y obliga a cambiarla al entrar.</summary>
+    [HttpPost("{id:int}/restablecer")]
+    public async Task<ActionResult<CredencialesTemporales>> Restablecer(int id, CancellationToken cancelacion)
+    {
+        var temporal = await servicio.RestablecerContrasenaAsync(id, cancelacion);
+        return temporal is null
+            ? Problem(statusCode: StatusCodes.Status403Forbidden, title: "El usuario no pertenece a tu campaña.")
+            : Ok(new CredencialesTemporales(temporal));
     }
 
     // La baja/reactivación (Activo) NO va aquí: pertenece a la pantalla de "Bajas de personal" (RH).

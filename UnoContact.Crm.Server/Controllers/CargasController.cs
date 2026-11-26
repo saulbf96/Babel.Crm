@@ -1,3 +1,4 @@
+using UnoContact.Crm.Server.Infraestructura;
 using UnoContact.Crm.Application.Adm;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,7 @@ namespace UnoContact.Crm.Server.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/cargas")]
-[Authorize(Policy = "Administrador")]
+[Permiso("carga-asignaciones")]
 public sealed class CargasController(IServicioCargas servicio) : ControllerBase
 {
     [HttpGet("procesos")]

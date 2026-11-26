@@ -5,9 +5,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { PAGINADOR_EN_ESPANOL, Paginacion, TAMANOS_PAGINA } from '../../shared/paginacion/paginacion';
 import { SesionService } from '../../core/sesion/sesion.service';
 import { UsuarioAdmin } from '../../core/usuarios/usuarios.models';
 import { UsuariosService } from '../../core/usuarios/usuarios.service';
+import { CredencialesDialogo } from '../../shared/credenciales/credenciales-dialogo';
+import { MatDialog } from '@angular/material/dialog';
 
 /** Administración de usuarios del Administrador (desbloquear / forzar cambio), por campaña. */
 @Component({
@@ -18,7 +22,9 @@ import { UsuariosService } from '../../core/usuarios/usuarios.service';
     MatIconModule,
     MatProgressBarModule,
     MatTableModule,
+    MatPaginatorModule,
   ],
+  providers: [PAGINADOR_EN_ESPANOL],
   templateUrl: './usuarios.html',
   styleUrl: './usuarios.css',
 })
@@ -26,12 +32,17 @@ export class Usuarios {
   private readonly servicio = inject(UsuariosService);
   private readonly sesion = inject(SesionService);
   private readonly avisos = inject(MatSnackBar);
+  private readonly dialogo = inject(MatDialog);
+  /** Nadie se restablece a sí mismo. */
+  protected readonly usuarioSesion = this.sesion.usuario;
 
   protected readonly cartera = this.sesion.cartera;
   protected readonly cargando = signal(false);
   protected readonly soloBloqueados = signal(false);
   protected readonly usuarios = signal<UsuarioAdmin[]>([]);
-  protected readonly columnas = ['usuario', 'empleado', 'puesto', 'estatus', 'acciones'];
+  protected readonly columnas = ['num', 'usuario', 'empleado', 'puesto', 'estatus', 'acciones'];
+  protected readonly pag = new Paginacion(this.usuarios);
+  protected readonly tamanos = TAMANOS_PAGINA;
 
   constructor() {
     this.cargar();
@@ -70,6 +81,26 @@ export class Usuarios {
 
   protected forzarCambio(u: UsuarioAdmin): Promise<void> {
     return this.accion(() => this.servicio.forzarCambio(u.idUsuario), `${u.usuario} deberá cambiar su contraseña al entrar.`);
+  }
+
+  /** Restablecer: confirma, genera una temporal ÚNICA y la muestra (la ventana no se cierra sola). */
+  protected restablecer(u: UsuarioAdmin): void {
+    this.dialogo
+      .open(CredencialesDialogo, {
+        data: {
+          titulo: 'Restablecer contraseña',
+          nombre: u.empleado || u.usuario,
+          usuario: u.usuario,
+          pregunta: `Se generará una contraseña temporal nueva para ${u.usuario}, se desbloqueará y deberá cambiarla al entrar. La anterior dejará de funcionar.`,
+          obtener: () => this.servicio.restablecer(u.idUsuario),
+        },
+        width: '520px',
+        maxWidth: '95vw',
+        disableClose: true,
+        autoFocus: false,
+      })
+      .afterClosed()
+      .subscribe(() => void this.cargar());
   }
 
   protected bloquear(u: UsuarioAdmin): Promise<void> {

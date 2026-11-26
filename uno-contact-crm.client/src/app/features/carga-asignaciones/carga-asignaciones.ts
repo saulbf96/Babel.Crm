@@ -10,6 +10,8 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { PAGINADOR_EN_ESPANOL, Paginacion, TAMANOS_PAGINA } from '../../shared/paginacion/paginacion';
 import { CargaAsignacion, ProcesoAsignacion } from '../../core/cargas/cargas.models';
 import { CargasService } from '../../core/cargas/cargas.service';
 import { Catalogos } from '../../core/catalogos/catalogos.models';
@@ -36,7 +38,9 @@ const MAXIMO_FILAS = 5000;
     MatProgressBarModule,
     MatSelectModule,
     MatTableModule,
+    MatPaginatorModule,
   ],
+  providers: [PAGINADOR_EN_ESPANOL],
   templateUrl: './carga-asignaciones.html',
   styleUrl: './carga-asignaciones.css',
 })
@@ -49,6 +53,8 @@ export class CargaAsignaciones {
   protected readonly catalogos = signal<Catalogos | null>(null);
   protected readonly procesos = signal<ProcesoAsignacion[]>([]);
   protected readonly cargas = signal<CargaAsignacion[]>([]);
+  protected readonly pag = new Paginacion(this.cargas);
+  protected readonly tamanos = TAMANOS_PAGINA;
   protected readonly carteraId = signal(0);
   protected readonly procesoId = signal(0);
   protected readonly nombreArchivo = signal('');
@@ -57,6 +63,7 @@ export class CargaAsignaciones {
   protected readonly enviando = signal(false);
 
   protected readonly columnas = [
+    'num',
     'cartera',
     'proceso',
     'archivo',

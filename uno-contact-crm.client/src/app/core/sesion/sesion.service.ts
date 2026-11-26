@@ -63,4 +63,22 @@ export class SesionService {
   tienePerfil(perfil: Perfil): boolean {
     return this._sesion()?.perfiles.includes(perfil) ?? false;
   }
+
+  /** Permisos de la sesión (opciones de menú). */
+  readonly permisos = computed(() => new Set(this._sesion()?.permisos ?? []));
+  readonly esRoot = computed(() => this._sesion()?.esRoot ?? false);
+
+  tienePermiso(clave: string): boolean {
+    return this.esRoot() || this.permisos().has(clave);
+  }
+
+  /** Solo administradores (o ROOT) dan permisos. */
+  puedeAdministrarPermisos(): boolean {
+    return this.esRoot() || this.tienePerfil('Administrador');
+  }
+
+  /** Lo que puede dar o quitar: ROOT todo (null); un admin, solo lo que él tiene. */
+  permisosQuePuedeDar(): ReadonlySet<string> | null {
+    return this.esRoot() ? null : this.permisos();
+  }
 }

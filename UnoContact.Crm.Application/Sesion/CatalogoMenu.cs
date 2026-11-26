@@ -41,11 +41,10 @@ public static class CatalogoMenu
         new("herramientas-expedientes", "Expedientes", "folder", "/herramientas/expedientes", Gestores, "Herramientas"),
         new("herramientas-softphone", "Softphone", "phone", "/herramientas/softphone", Gestores, "Herramientas"),
 
-        new("supervision", "Supervisión", "monitoring", "/supervision", [Perfil.Supervisor]),
-
         // --- Área de Administración (las cinco pantallas del BABEL ADMINISTRATIVO) ---
         new("empleados", "Consulta de empleados", "badge", "/administracion/empleados", [Perfil.Administrador], "Administración"),
         new("alta-empleados", "Alta de empleados", "person_add", "/administracion/alta-empleados", [Perfil.Administrador], "Administración"),
+        new("bajas", "Bajas de personal", "person_remove", "/administracion/bajas", [Perfil.Administrador], "Administración"),
         new("asignar-personal", "Asignar personal", "group_add", "/administracion/asignar-personal", [Perfil.Administrador], "Administración"),
         new("cambiar-cartera", "Cambia cartera", "swap_horiz", "/administracion/cambiar-cartera", [Perfil.Administrador], "Administración"),
         new("carga-asignaciones", "Carga de asignaciones", "upload_file", "/administracion/carga-asignaciones", [Perfil.Administrador], "Administración"),

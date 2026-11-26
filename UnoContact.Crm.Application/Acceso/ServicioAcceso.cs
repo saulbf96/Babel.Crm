@@ -10,7 +10,9 @@ public sealed record ResultadoAcceso(
     string? Mensaje,
     UsuarioCrm? Usuario = null,
     IReadOnlyCollection<Perfil>? Perfiles = null,
-    MotivoCambioContrasena MotivoCambio = MotivoCambioContrasena.Ninguno)
+    MotivoCambioContrasena MotivoCambio = MotivoCambioContrasena.Ninguno,
+    // Opciones de menú que puede usar (ReglasPermisos). Van en la cookie.
+    IReadOnlyCollection<string>? Permisos = null)
 {
     public bool DebeCambiarContrasena => MotivoCambio != MotivoCambioContrasena.Ninguno;
 
@@ -30,7 +32,8 @@ public interface IServicioAcceso
 public sealed class ServicioAcceso(
     IRepositorioUsuarios repositorio,
     IControlIntentos intentos,
-    IOptions<MapeoPerfiles> mapeo) : IServicioAcceso
+    IOptions<MapeoPerfiles> mapeo,
+    TimeProvider reloj) : IServicioAcceso
 {
     public const int IntentosPermitidos = 3;
 
@@ -75,13 +78,29 @@ public sealed class ServicioAcceso(
         }
 
         var perfiles = mapeo.Value.PerfilesDe(encontrado.IdPuesto);
-        if (perfiles.Count == 0)
+        // Permisos = lo de su puesto + ajustes que le dio un administrador (ROOT = todo).
+        var ajustes = await repositorio.PermisosAsync(encontrado.IdUsuario, cancelacion);
+        var permisos = ReglasPermisos.Efectivos(perfiles, encontrado.EsRoot, ajustes);
+        if (!permisos.Any(p => p != ReglasPermisos.Inicio))
         {
-            return ResultadoAcceso.Rechazado("Tu puesto no tiene acceso al CRM. Repórtalo al área de sistemas.");
+            return ResultadoAcceso.Rechazado("Tu puesto no tiene acceso al sistema. Repórtalo al área de sistemas.");
+        }
+
+        // Horario de acceso (PoliticaHorario): fuera de horario no puede iniciar sesión.
+        if (encontrado is { AplicaHorario: true, HoraEntrada: { } entrada, HoraSalida: { } salida })
+        {
+            var ahora = TimeOnly.FromDateTime(reloj.GetLocalNow().DateTime);
+            if (!PoliticaHorario.PuedeEntrar(ahora, entrada, salida))
+            {
+                return ResultadoAcceso.Rechazado(
+                    $"Estás fuera de tu horario de acceso ({entrada:HH\\:mm} a {salida:HH\\:mm}). " +
+                    $"Puedes entrar desde las {PoliticaHorario.DesdeCuandoPuedeEntrar(entrada):HH\\:mm}. " +
+                    "Si tu horario cambió, pide a tu administrador que lo actualice.");
+            }
         }
 
         // Cambio pendiente: forzado por un admin, o contraseña vencida (PoliticaContrasena.DiasVigencia).
         var motivo = await repositorio.EstadoContrasenaAsync(encontrado.IdUsuario, PoliticaContrasena.DiasVigencia, cancelacion);
-        return new ResultadoAcceso(true, null, encontrado, perfiles, motivo);
+        return new ResultadoAcceso(true, null, encontrado, perfiles, motivo, permisos.ToList());
     }
 }

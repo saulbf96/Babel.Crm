@@ -11,6 +11,8 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { PAGINADOR_EN_ESPANOL, Paginacion, TAMANOS_PAGINA } from '../../shared/paginacion/paginacion';
 import { Catalogos } from '../../core/catalogos/catalogos.models';
 import { CatalogosService } from '../../core/catalogos/catalogos.service';
 import { OperativoResumen, PersonalCartera } from '../../core/carteras/carteras.models';
@@ -31,7 +33,9 @@ import { SesionService } from '../../core/sesion/sesion.service';
     MatProgressBarModule,
     MatSelectModule,
     MatTableModule,
+    MatPaginatorModule,
   ],
+  providers: [PAGINADOR_EN_ESPANOL],
   templateUrl: './asignar-personal.html',
   styleUrl: './asignar-personal.css',
 })
@@ -54,7 +58,9 @@ export class AsignarPersonal {
   protected readonly restaurando = signal(false);
   protected readonly busco = signal(false);
 
-  protected readonly columnas = ['seleccion', 'nombre', 'puesto', 'departamento', 'cartera', 'estado'];
+  protected readonly columnas = ['seleccion', 'num', 'nombre', 'puesto', 'departamento', 'cartera', 'estado'];
+  protected readonly pag = new Paginacion(this.personal);
+  protected readonly tamanos = TAMANOS_PAGINA;
   protected readonly seleccionadosCount = computed(() => this.seleccionados().size);
   protected readonly todosSeleccionados = computed(() => {
     const visibles = this.personal();
@@ -104,6 +110,7 @@ export class AsignarPersonal {
         this.carterasService.operativo(idCartera),
       ]);
       this.personal.set(personal);
+      this.pag.reiniciar();
       this.operativo.set(operativo);
       this.busco.set(true);
     } catch (e) {
@@ -160,6 +167,10 @@ export class AsignarPersonal {
       this.guardando.set(false);
     }
   }
+
+
+
+
 
   protected async restaurar(): Promise<void> {
     const ids = this.operativo().map((o) => o.idEmpleado);

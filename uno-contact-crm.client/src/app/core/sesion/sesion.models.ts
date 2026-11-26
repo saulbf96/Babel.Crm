@@ -18,6 +18,10 @@ export interface Sesion {
   menu: OpcionMenu[];
   /** Por qué debe cambiar la contraseña: lo forzó un admin o ya venció (90 días). */
   motivoCambioContrasena?: MotivoCambioContrasena | null;
+  /** Opciones de menú que puede usar (claves de CatalogoMenu). */
+  permisos?: string[];
+  /** ROOT: tiene todo y puede cambiarse sus propios permisos. */
+  esRoot?: boolean;
 }
 
 export type MotivoCambioContrasena = 'Forzado' | 'Vencida';

@@ -81,6 +81,11 @@ public sealed class ServicioCambioContrasenaTests
         public Task<MotivoCambioContrasena> EstadoContrasenaAsync(int idUsuario, int diasVigencia, CancellationToken cancelacion) =>
             Task.FromResult(MotivoCambioContrasena.Ninguno);
 
+        public List<AjustePermiso> Ajustes { get; } = [];
+
+        public Task<IReadOnlyList<AjustePermiso>> PermisosAsync(int idUsuario, CancellationToken cancelacion) =>
+            Task.FromResult<IReadOnlyList<AjustePermiso>>(Ajustes);
+
         public Task BloquearAsync(string usuario, string ip, string equipo, byte intentos, CancellationToken cancelacion) =>
             Task.CompletedTask;
     }

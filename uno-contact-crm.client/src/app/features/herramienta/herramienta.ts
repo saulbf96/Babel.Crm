@@ -389,7 +389,7 @@ export class Herramienta {
     const gestion: SolicitudGestion = {
       idCuenta: id,
       idTipoGestion: 1,
-      comentario: 'Marcación desde softphone CRM',
+      comentario: 'Marcación desde softphone',
       idTelefono: null,
       telefonoMarcado: numero,
       inbound: false,

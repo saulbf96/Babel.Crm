@@ -1,7 +1,7 @@
 # Memoria de continuidad — BABEL_UNIFICADA / Babel.Crm
 
-> **Última actualización:** 2026-11-25
-> **Rama de trabajo:** `feat/unificador_babel` (repositorio `C:\Users\sbasilio\source\repos\Babel.Crm`)
+> **Última actualización:** 2026-11-26
+> **Rama de trabajo:** `feature/login` (repositorio `C:\Users\sbasilio\source\repos\Babel.Crm`)
 > **Estado:** trabajo en curso, **sin commits**. Todo está en el working tree.
 > **Regla:** no hacer commit hasta que el usuario pruebe y apruebe.
 > **Regla de mantenimiento:** cada cambio importante debe reflejarse en este documento
@@ -10,12 +10,10 @@
 > El agente **no** debe iniciar ni dejar corriendo servidores propios; solo indica
 > usuario y contraseña de prueba.
 >
-> **Paso actual (2026-11-25):** los 11 submenús del `MenuStrip` de `FRM_GESTION_CARTERA`
-> ya son pantallas **funcionales** con datos reales (antes eran informativas). La migración
-> operativa completa de las 13 carteras está **corriendo** (relanzada tras corregir el layout
-> variable de `BAZ_MOVILIDAD` y un deadlock del smoke). Administración sigue terminada y
-> aprobada. **Sin commit**; el usuario prueba con `GESTOR` / `Babel2026!` (Gestión) y
-> `ADMIN` / `Babel2026!` (Administración). Tras la migración: F5 + Ctrl+F5 + relogin.
+> **Paso actual (2026-11-26, cierre de sesión):** migración total en `database/BABEL_UNIFICADA/MIGRACION_TOTAL/`.
+> Espejo `legacy.*` completo (99 tablas, 31 con datos, 13 carteras, 0 errores). `03` normalización OK; `04` SPs legacy parcial; `06` stubs históricos OK (1,417,750 `Activo=0`, `USP_CONSULTA_CUENTAS` filtra `Activo=1`); `20` unificación empleados OK; `05` verificación OK. QI OFF corregido a **0** (reaplicados `06_adm_carga_asignaciones.sql` y `07_mig_control.sql` con `sqlcmd -I`).
+> **Confirmado**: asignación cuenta usó `NECU_ID_EMPLEADO` (11_mig) y `NECU_ID_EMPLEADO_ASIGNADO` viene en 0 en todas las carteras; NETMSYST_DEMO cuentas idénticas a CONCREDITO; SANBORNS/LSF sin NECU en origen (solo catálogos pequeños); gaps G/P en MBA/BAZ_FRANQUICIA/KUBO/BAZ_EXEMPLEADOS coinciden mayormente con origen legacy.
+> **Pendiente mañana**: decisión contraseña/`-Simular` para `18_seg_provisionar_usuarios.ps1`; decidir NETMSYST_DEMO (excluir/inactivar); definir fuente real de asignación de cuentas a asesor (ASIGNADO en 0); ampliar `04_sps_legacy.sql`; validar gaps de teléfonos/demos vs legacy. Remoto `10.80.5.189` solo SELECT.
 
 Este documento existe para poder retomar el proyecto si la conversación se cierra.
 Léelo completo antes de tocar la base o el código.
@@ -971,7 +969,55 @@ dotnet run --project UnoContact.Crm.Server --no-build --no-launch-profile --urls
 
 ---
 
-## 12. Nota para quien retome
+## 12. Migración total (`database/BABEL_UNIFICADA/MIGRACION_TOTAL`)
+
+**Fecha:** 2026-11-26. **Regla:** `10.80.5.189` solo `SELECT`. Contraseña nunca impresa/persistida.
+
+### Scripts
+
+| Script | Estado | Notas |
+|---|---|---|
+| `00_inventario_remoto.ps1` | OK | 13 carteras, 99 tablas, 1675 columnas. CSVs en `inventario/`. |
+| `01_generar_esquema.ps1` / `01_esquema_legacy.sql` | OK | Espejo `legacy.*` aplicado (99 tablas). |
+| `02_migrar_todo.ps1` | OK | 173 tabla/cartera copiadas, 4 reintentos corregidos, **0 errores** finales. Log: `migracion.log`/`migracion_retry.log`. |
+| `03_normalizar_operativo.sql` | OK (v3) | Mapea `legacy.*` -> `ope.*`. Usa `ISNULL(IdEmpleadoUnificado,IdEmpleado)`. |
+| `04_sps_legacy.sql` | OK parcial | Capa compatibilidad SPs clave; falta ampliar ~80 SPs de `MDL_CONSULTAS.cs`. |
+| `05_verificar.sql` | OK | Conteos y huérfanos básicos. |
+| `06_cuentas_stub_historicas.sql` | OK | 1,417,750 stubs `Activo=0` `HISTORICO_SIN_NECU`; `USP_CONSULTA_CUENTAS` filtra `Activo=1`; renormalización 03 v4. |
+| `20_rh_unificar_empleados.sql -v SIMULAR=0` | OK | Post-carga ejecutada. |
+| `18_seg_provisionar_usuarios.ps1` | PENDIENTE | Requiere `-ContrasenaTemporal` (no inventar). Puede correrse `-Simular`. |
+
+### Conteos verificados (05)
+
+- `legacy.*`: 99 tablas; top: `NEBT_BASE_TELEFONICA` 14,746,839; `NEGE_GESTION` 3,436,820; `NEDE_DEMOGRAFICOS` 3,098,378; `HIEC_EVOLUCION_CUENTA` 2,337,140; `NEMF_MORA_FUENTE_INGRESO` 1,115,973; `NEPR_PROMESAS` 1,105,821; `NECU_DATOSCUENTA` 433,313.
+- `ope.*`: Cuenta 1,853,510 (435,760 activas + 1,417,750 stubs históricos `Activo=0`); Telefono 904,916; Gestion 237,605; Promesa 20,881; Demografico 318,365; MoraFuenteIngreso 1,115,973; EvolucionCuenta 2,337,140; DatoCuenta 0; Nota 0; Negociacion 26; AgendaLlamada 0; BlocNota 0; Receso 1.
+- Huérfanos básicos: 0.
+
+### Hallazgos
+
+- **HIEC/NEMF históricos sin cuenta:** resuelto con `06_cuentas_stub_historicas.sql`. Se crearon 1,417,750 stubs `Activo=0` (`HISTORICO_SIN_NECU`) y se ajustó `USP_CONSULTA_CUENTAS` a `Activo=1`. Tras renormalizar: `MoraFuenteIngreso` 1,115,973 y `EvolucionCuenta` 2,337,140 (coinciden con legacy).
+- **Asignación de cuenta a asesor:** `11_mig_operativo_completo.ps1` mapeó `NECU_ID_EMPLEADO` a `ope.Cuenta.IdEmpleado`. `NECU_ID_EMPLEADO_ASIGNADO` está en 0 en todas las carteras del espejo legacy; no basta cambiar columna, falta definir fuente real.
+- **NETMSYST_DEMO (4) vs CONCREDITO (9):** 6,808 cuentas activas idénticas por cuenta/cliente/saldo/control; gestiones difieren (9,815 vs 11,406). Pendiente decidir excluir/inactivar demo.
+- **SANBORNS (11) / LSF_PRESTAMOS_PERSONALES (13):** sin filas en `legacy.NECU_DATOSCUENTA`; solo catálogos pequeños en legacy.
+- **QI OFF:** quedó en 0 tras reaplicar `06_adm_carga_asignaciones.sql` y `07_mig_control.sql` con `sqlcmd -I`.
+- **SPs legacy cifrados:** no se pueden leer definiciones; se reimplementan por contrato observado en decompilado.
+- **`mig.ControlCarga`:** el script 02 no registró cargas en `mig.ControlCarga`; sí dejó log.
+
+### Comandos
+
+```powershell
+# Verificación
+sqlcmd -S localhost -E -C -d BABEL_UNIFICADA -b -i database\BABEL_UNIFICADA\MIGRACION_TOTAL\05_verificar.sql
+
+# Re-normalizar (idempotente)
+sqlcmd -S localhost -E -C -d BABEL_UNIFICADA -b -i database\BABEL_UNIFICADA\MIGRACION_TOTAL\03_normalizar_operativo.sql
+
+# Post-carga (pedidos por usuario)
+sqlcmd -S localhost -E -C -d BABEL_UNIFICADA -b -v SIMULAR=0 -i database\BABEL_UNIFICADA\20_rh_unificar_empleados.sql
+powershell -NoProfile -ExecutionPolicy Bypass -File database\BABEL_UNIFICADA\18_seg_provisionar_usuarios.ps1 -ContrasenaTemporal '<TEMPORAL>' # o -Simular
+```
+
+## 13. Nota para quien retome
 
 Si algo no coincide con este documento, **primero revisa el working tree y la base**:
 puede haber cambios posteriores sin commit. No borres archivos que no entiendas;

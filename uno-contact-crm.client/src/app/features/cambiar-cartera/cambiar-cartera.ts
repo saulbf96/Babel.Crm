@@ -33,7 +33,7 @@ export class CambiarCartera {
   protected readonly cambiando = signal<number | null>(null);
   protected readonly actual = computed(() => this.sesion.sesion()?.idCartera ?? 0);
 
-  protected readonly columnas = ['cartera', 'cliente', 'base', 'departamento', 'accion'];
+  protected readonly columnas = ['num', 'cartera', 'cliente', 'departamento', 'accion'];
 
   constructor() {
     void this.cargar();

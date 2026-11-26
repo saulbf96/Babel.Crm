@@ -6,6 +6,9 @@ namespace UnoContact.Crm.Application.Rh;
 /// </summary>
 public sealed record EmpleadoResumen(
     int IdEmpleado,
+    string Nombre,          // por separado, para la edición
+    string Paterno,
+    string? Materno,
     string NombreCompleto,
     string? Usuario,
     byte IdPuesto,
@@ -16,8 +19,11 @@ public sealed record EmpleadoResumen(
     string? Cartera,
     byte IdSexo,
     string Sexo,
-    byte IdTurno,
-    string Turno,
+    byte? IdTurno,          // empleados migrados de BABEL
+    string? Turno,
+    TimeOnly? HoraEntrada,  // altas nuevas (horario en vez de turno)
+    TimeOnly? HoraSalida,
+    bool AplicaHorario,     // false = entra a cualquier hora
     DateOnly? FechaNacimiento,
     DateOnly FechaIngreso,
     string? Rfc,

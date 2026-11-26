@@ -13,7 +13,13 @@ public sealed record UsuarioCrm(
     bool Bloqueado,
     bool Activo,
     short IdCartera,
-    string Cartera);
+    string Cartera,
+    // Horario de acceso del empleado (ver PoliticaHorario). Sin empleado => no aplica.
+    bool AplicaHorario = false,
+    TimeOnly? HoraEntrada = null,
+    TimeOnly? HoraSalida = null,
+    // ROOT: tiene todos los permisos (ver ReglasPermisos).
+    bool EsRoot = false);
 
 /// <summary>Por qué el login exige cambiar la contraseña.</summary>
 public enum MotivoCambioContrasena
@@ -47,6 +53,9 @@ public interface IRepositorioUsuarios
 
     /// <summary>Bloquea al usuario por intentos fallidos.</summary>
     Task BloquearAsync(string usuario, string ip, string equipo, byte intentos, CancellationToken cancelacion);
+
+    /// <summary>Ajustes de permisos del usuario contra lo de su puesto (seg.UsuarioPermiso).</summary>
+    Task<IReadOnlyList<AjustePermiso>> PermisosAsync(int idUsuario, CancellationToken cancelacion);
 
     /// <summary>Guarda la nueva contraseña (la cifra como hash) y baja la bandera de cambio pendiente.</summary>
     Task CambiarContrasenaAsync(int idUsuario, string contrasenaNueva, CancellationToken cancelacion);

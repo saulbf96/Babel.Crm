@@ -22,6 +22,17 @@ export const requiereCambioGuard: CanActivateFn = () => {
 };
 
 /**
+ * Oculta rutas a quien no tiene el permiso (opción de menú). Solo experiencia de usuario:
+ * la API valida el mismo permiso con [Permiso("…")].
+ */
+export function permisoGuard(...claves: string[]): CanMatchFn {
+  return () => {
+    const sesion = inject(SesionService);
+    return claves.some((c) => sesion.tienePermiso(c)) || inject(Router).parseUrl('/acceso-denegado');
+  };
+}
+
+/**
  * Oculta rutas a quien no tiene el perfil. Es solo para la experiencia de usuario:
  * la autorización real la valida siempre la API.
  */

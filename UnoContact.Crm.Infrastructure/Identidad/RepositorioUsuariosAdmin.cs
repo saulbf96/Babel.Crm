@@ -8,7 +8,9 @@ namespace UnoContact.Crm.Infrastructure.Identidad;
 /// Administración de usuarios (esquema seg de BABEL_UNIFICADA). Los SP validan el
 /// alcance por cartera, así que un admin solo actúa sobre usuarios de su campaña.
 /// </summary>
-public sealed class RepositorioUsuariosAdmin(IEjecutorProcedimientos procedimientos) : IRepositorioUsuariosAdmin
+public sealed class RepositorioUsuariosAdmin(
+    IEjecutorProcedimientos procedimientos,
+    Seguridad.IHashContrasenas hash) : IRepositorioUsuariosAdmin
 {
     private const string BaseDatos = "BABEL_UNIFICADA";
 
@@ -39,6 +41,21 @@ public sealed class RepositorioUsuariosAdmin(IEjecutorProcedimientos procedimien
 
     public async Task<bool> BloquearManualAsync(int idUsuario, int idCartera, CancellationToken cancelacion) =>
         await EjecutarConAlcanceAsync("USP_BLOQUEAR_MANUAL", idUsuario, idCartera, cancelacion);
+
+    public async Task<bool> RestablecerContrasenaAsync(int idUsuario, int idCartera, string contrasenaTemporal, string usuario, CancellationToken cancelacion)
+    {
+        var filas = await procedimientos.ConsultarAsync(
+            $"{BaseDatos}.seg.USP_RESTABLECER_CONTRASENA",
+            [
+                new ParametroSp("@IdUsuario", idUsuario, DbType.Int32),
+                new ParametroSp("@IdCartera", idCartera, DbType.Int32),
+                new ParametroSp("@HashContrasena", hash.Hashear(contrasenaTemporal), DbType.AnsiString, 200),
+                new ParametroSp("@Usuario", usuario, DbType.AnsiString, 50),
+            ],
+            r => Convert.ToInt32(r["Afectados"]),
+            cancelacion);
+        return filas.Count > 0 && filas[0] > 0;
+    }
 
     public async Task<bool> CambiarActivoAsync(int idUsuario, int idCartera, bool activo, CancellationToken cancelacion)
     {

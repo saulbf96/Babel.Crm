@@ -30,6 +30,9 @@ public interface IRepositorioUsuariosAdmin
 
     /// <summary>Bloqueo manual si el usuario pertenece a la cartera. Regresa true si actuó.</summary>
     Task<bool> BloquearManualAsync(int idUsuario, int idCartera, CancellationToken cancelacion);
+
+    /// <summary>Pone una contraseña temporal (la cifra), desbloquea y obliga a cambiarla. True si actuó.</summary>
+    Task<bool> RestablecerContrasenaAsync(int idUsuario, int idCartera, string contrasenaTemporal, string usuario, CancellationToken cancelacion);
 }
 
 /// <summary>
@@ -50,6 +53,12 @@ public interface IServicioUsuarios
     /// <summary>true = reactiva; false = baja lógica. No deja al admin desactivarse a sí mismo.</summary>
     Task<bool> CambiarActivoAsync(int idUsuario, bool activo, CancellationToken cancelacion);
 
+    /// <summary>
+    /// Restablece la contraseña con una temporal ÚNICA y la regresa (se muestra una sola vez).
+    /// Nadie se restablece a sí mismo. null = el usuario no es de su campaña.
+    /// </summary>
+    Task<string?> RestablecerContrasenaAsync(int idUsuario, CancellationToken cancelacion);
+
     /// <summary>El usuario autenticado (para no permitir que se desactive a sí mismo).</summary>
     int IdUsuarioActual { get; }
 }
@@ -69,6 +78,16 @@ public sealed class ServicioUsuarios(IRepositorioUsuariosAdmin repositorio, IUsu
         repositorio.BloquearManualAsync(idUsuario, actual.IdCartera, cancelacion);
 
     public int IdUsuarioActual => actual.IdUsuario;
+
+    public async Task<string?> RestablecerContrasenaAsync(int idUsuario, CancellationToken cancelacion)
+    {
+        if (idUsuario == actual.IdUsuario)
+            throw new ArgumentException("No puedes restablecer tu propia contraseña; cámbiala desde tu sesión o pídelo a otro administrador.");
+        var temporal = Acceso.GeneradorContrasena.Generar();
+        return await repositorio.RestablecerContrasenaAsync(idUsuario, actual.IdCartera, temporal, actual.Usuario, cancelacion)
+            ? temporal
+            : null;
+    }
 
     public Task<bool> CambiarActivoAsync(int idUsuario, bool activo, CancellationToken cancelacion) =>
         repositorio.CambiarActivoAsync(idUsuario, actual.IdCartera, activo, cancelacion);

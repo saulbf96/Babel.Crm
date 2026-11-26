@@ -12,7 +12,7 @@ import { SesionService } from '../../core/sesion/sesion.service';
         <p>Perfiles: {{ sesion.sesion()?.perfiles?.join(', ') }}</p>
         <p>Elige un módulo en el menú de la izquierda.</p>
       </mat-card-content>
-    </mat-card>
+    </mat-card>     
   `,
 })
 export class Inicio {
